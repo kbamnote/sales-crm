@@ -10,6 +10,9 @@ import DashboardPage from './pages/dashboard/DashboardPage';
 import LeadsPage from './pages/leads/LeadsPage';
 import MeetingsPage from './pages/meetings/MeetingsPage';
 
+// Core pages
+import ClientsPage from './pages/clients/ClientsPage';
+
 // Placeholder pages (developer to flesh out using LeadsPage / MeetingsPage as templates)
 import PlaceholderPage from './pages/PlaceholderPage';
 
@@ -31,8 +34,8 @@ export default function App() {
         <Route path="meetings" element={<MeetingsPage />} />
 
         {/* All other pages — developer to convert from V8.html using the patterns shown */}
-        <Route path="clients" element={<PlaceholderPage title="All Clients" fnRef="rAllClients" />} />
-        <Route path="my-clients" element={<PlaceholderPage title="My Clients" fnRef="rMyClients" />} />
+        <Route path="clients" element={<ClientsPage />} />
+        <Route path="my-clients" element={<ClientsPage myOnly />} />
         <Route path="my-meetings" element={<PlaceholderPage title="My Meetings" fnRef="rMyMeetings" />} />
         <Route path="deals" element={<PlaceholderPage title="Deals & Payments" fnRef="rDeals" />} />
         <Route path="my-deals" element={<PlaceholderPage title="My Deals" fnRef="rMyDeals" />} />
