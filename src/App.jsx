@@ -16,6 +16,30 @@ import ClientsPage from './pages/clients/ClientsPage';
 // Placeholder pages (developer to flesh out using LeadsPage / MeetingsPage as templates)
 import PlaceholderPage from './pages/PlaceholderPage';
 
+// Phase 1 CRUD
+import CallsPage from './pages/calls/CallsPage';
+import CouponsPage from './pages/coupons/CouponsPage';
+import NotificationsPage from './pages/notifications/NotificationsPage';
+import AppointmentsPage from './pages/appointments/AppointmentsPage';
+
+// Phase 2
+import DealsPage from './pages/deals/DealsPage';
+import TargetsPage from './pages/targets/TargetsPage';
+import TeamPage from './pages/team/TeamPage';
+import PermissionsPage from './pages/permissions/PermissionsPage';
+import ReportsPage from './pages/reports/ReportsPage';
+
+// Phase 3
+import AttendancePage from './pages/attendance/AttendancePage';
+import FieldVisitPage from './pages/fieldVisit/FieldVisitPage';
+import ChatPage from './pages/chat/ChatPage';
+import LiveMapPage from './pages/dashboard/LiveMapPage';
+import HierarchyPage from './pages/team/HierarchyPage';
+
+// Phase 4
+import SettingsPage from './pages/settings/SettingsPage';
+import ProfilePage from './pages/profile/ProfilePage';
+
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -36,26 +60,26 @@ export default function App() {
         {/* All other pages — developer to convert from V8.html using the patterns shown */}
         <Route path="clients" element={<ClientsPage />} />
         <Route path="my-clients" element={<ClientsPage myOnly />} />
-        <Route path="my-meetings" element={<PlaceholderPage title="My Meetings" fnRef="rMyMeetings" />} />
-        <Route path="deals" element={<PlaceholderPage title="Deals & Payments" fnRef="rDeals" />} />
-        <Route path="my-deals" element={<PlaceholderPage title="My Deals" fnRef="rMyDeals" />} />
-        <Route path="calls" element={<PlaceholderPage title="Calls Log" fnRef="rCallsLog" />} />
-        <Route path="my-calls" element={<PlaceholderPage title="My Calls" fnRef="rMyCalls" />} />
-        <Route path="my-target" element={<PlaceholderPage title="My Target" fnRef="rMyTarget" />} />
-        <Route path="targets" element={<PlaceholderPage title="Targets" fnRef="rTargets" />} />
-        <Route path="hierarchy" element={<PlaceholderPage title="Team Hierarchy" fnRef="rHierarchy" />} />
-        <Route path="live-map" element={<PlaceholderPage title="Live Map" fnRef="rLiveMap" />} />
-        <Route path="coupons" element={<PlaceholderPage title="Coupons" fnRef="rCoupons" />} />
-        <Route path="team" element={<PlaceholderPage title="Manage Team" fnRef="rTeamMgmt" />} />
-        <Route path="appointments" element={<PlaceholderPage title="Appointments" fnRef="rAppointments" />} />
-        <Route path="reports" element={<PlaceholderPage title="Reports" fnRef="rReports" />} />
-        <Route path="notifications" element={<PlaceholderPage title="Notifications" fnRef="rNotifications" />} />
-        <Route path="settings" element={<PlaceholderPage title="Company Settings" fnRef="rCompanySettings" />} />
-        <Route path="permissions" element={<PlaceholderPage title="Permissions" fnRef="rPermissions" />} />
-        <Route path="attendance" element={<PlaceholderPage title="Attendance" fnRef="rAttendance" />} />
-        <Route path="field-visit" element={<PlaceholderPage title="Field Visit" fnRef="rFieldVisit" />} />
-        <Route path="chat" element={<PlaceholderPage title="Chat" fnRef="renderChatPage" />} />
-        <Route path="profile" element={<PlaceholderPage title="My Profile" fnRef="rMyProfile" />} />
+        <Route path="my-meetings" element={<MeetingsPage />} />
+        <Route path="deals" element={<DealsPage />} />
+        <Route path="my-deals" element={<DealsPage />} />
+        <Route path="calls" element={<CallsPage />} />
+        <Route path="my-calls" element={<CallsPage />} />
+        <Route path="my-target" element={<TargetsPage />} />
+        <Route path="targets" element={<TargetsPage />} />
+        <Route path="hierarchy" element={<HierarchyPage />} />
+        <Route path="live-map" element={<LiveMapPage />} />
+        <Route path="coupons" element={<CouponsPage />} />
+        <Route path="team" element={<TeamPage />} />
+        <Route path="appointments" element={<AppointmentsPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="permissions" element={<PermissionsPage />} />
+        <Route path="attendance" element={<AttendancePage />} />
+        <Route path="field-visit" element={<FieldVisitPage />} />
+        <Route path="chat" element={<ChatPage />} />
+        <Route path="profile" element={<ProfilePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
