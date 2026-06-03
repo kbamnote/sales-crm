@@ -46,10 +46,14 @@ export default function ClientsPage({ myOnly = false }) {
     <ClientForm
       salesUsers={salesUsers}
       onSave={async (data) => {
-        await clientsApi.create(data);
-        toast('Client added!');
-        closeModal();
-        load();
+        try {
+          await clientsApi.create(data);
+          toast('Client added!');
+          closeModal();
+          load();
+        } catch (e) {
+          toast(e.response?.data?.error || 'Failed to add client');
+        }
       }}
       onCancel={closeModal}
     />
@@ -60,10 +64,14 @@ export default function ClientsPage({ myOnly = false }) {
       client={client}
       salesUsers={salesUsers}
       onSave={async (data) => {
-        await clientsApi.update(client._id, data);
-        toast('Updated!');
-        closeModal();
-        load();
+        try {
+          await clientsApi.update(client._id, data);
+          toast('Updated!');
+          closeModal();
+          load();
+        } catch (e) {
+          toast(e.response?.data?.error || 'Failed to update client');
+        }
       }}
       onCancel={closeModal}
     />
@@ -184,7 +192,9 @@ function ClientForm({ client, salesUsers, onSave, onCancel }) {
   const submit = (e) => {
     e.preventDefault();
     if (!form.name || !form.phone) return;
-    onSave(form);
+    const payload = { ...form };
+    if (!payload.assignedTo) delete payload.assignedTo;
+    onSave(payload);
   };
 
   return (
