@@ -55,6 +55,8 @@ export const NAV_ITEMS = [
     roles: ['admin','manager','bdo','team_leader','sales','tms','tme','hr'] },
   { id: 'attendance', path: '/attendance', ic: '⏰', label: 'Attendance',
     roles: ['admin','manager','bdo','team_leader','sales','tms','tme','hr'] },
+  { id: 'presentations', path: '/presentations', ic: '🎤', label: 'Presentations',
+    roles: ['admin','manager'], sec: 'Tools' },
 
   // Admin
   { id: 'company-settings', path: '/settings', ic: '⚙️', label: 'Company Settings',

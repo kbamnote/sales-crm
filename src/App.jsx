@@ -35,6 +35,7 @@ import FieldVisitPage from './pages/fieldVisit/FieldVisitPage';
 import ChatPage from './pages/chat/ChatPage';
 import LiveMapPage from './pages/dashboard/LiveMapPage';
 import HierarchyPage from './pages/team/HierarchyPage';
+import PresentationsPage from './pages/presentations/PresentationsPage';
 
 // Phase 4
 import SettingsPage from './pages/settings/SettingsPage';
@@ -80,6 +81,7 @@ export default function App() {
         <Route path="field-visit" element={<FieldVisitPage />} />
         <Route path="chat" element={<ChatPage />} />
         <Route path="profile" element={<ProfilePage />} />
+        <Route path="presentations" element={<PresentationsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
