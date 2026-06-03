@@ -114,6 +114,17 @@ export default function PresentationsPage() {
     return `${m}m ${s}s`;
   };
 
+  const handleDeletePresentation = async (id) => {
+    if (!window.confirm('Are you sure you want to completely delete this presentation recording?')) return;
+    try {
+      await presentationsApi.deletePresentation(id);
+      setPresentations(presentations.filter(p => p._id !== id));
+      toast('✅ Presentation Deleted');
+    } catch (e) {
+      toast('Failed to delete presentation');
+    }
+  };
+
   return (
     <div style={{ display: 'flex', gap: 20, height: 'calc(100vh - 100px)' }}>
       {/* Sidebar: List of Salespersons */}
@@ -203,8 +214,11 @@ export default function PresentationsPage() {
                       <tr>
                         <th>Customer</th>
                         <th>Date</th>
+                        <th>Location</th>
+                        <th>Selfie</th>
                         <th>Duration</th>
                         <th>Recording</th>
+                        <th>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -215,13 +229,34 @@ export default function PresentationsPage() {
                             <div style={{ fontSize: 12, color: 'var(--mu)' }}>{p.customerCompany || 'N/A'}</div>
                           </td>
                           <td>{fd(p.createdAt)}</td>
+                          <td>
+                            {p.location ? (
+                              <a href={`https://www.google.com/maps/search/?api=1&query=${p.location.latitude},${p.location.longitude}`} target="_blank" rel="noreferrer" style={{ color: 'var(--p)' }}>
+                                View Map
+                              </a>
+                            ) : (
+                              <span style={{ color: 'var(--mu)' }}>N/A</span>
+                            )}
+                          </td>
+                          <td>
+                            {p.selfieUrl ? (
+                              <a href={p.selfieUrl} target="_blank" rel="noreferrer">
+                                <img src={p.selfieUrl} alt="Selfie" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 20 }} />
+                              </a>
+                            ) : (
+                              <span style={{ color: 'var(--mu)' }}>No Image</span>
+                            )}
+                          </td>
                           <td>{formatDuration(p.duration)}</td>
                           <td>
                             {p.audioUrl ? (
-                              <audio controls src={p.audioUrl} style={{ height: 32, maxWidth: 250 }} />
+                              <audio controls src={p.audioUrl} style={{ height: 32, maxWidth: 200 }} />
                             ) : (
                               <span style={{ color: 'var(--mu)' }}>No Audio</span>
                             )}
+                          </td>
+                          <td>
+                            <button className="btn btn-sm btn-r" onClick={() => handleDeletePresentation(p._id)}>Delete</button>
                           </td>
                         </tr>
                       ))}

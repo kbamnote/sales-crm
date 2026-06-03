@@ -167,5 +167,6 @@ export const regionsApi = {
 export const presentationsApi = {
   getBySalesperson: (id) => api.get(`/presentations/${id}`),
   addPpt: (salespersonId, data) => api.post(`/presentations/ppt/${salespersonId}`, data),
-  deletePpt: (salespersonId, pptId) => api.delete(`/presentations/ppt/${salespersonId}/${pptId}`)
+  deletePpt: (salespersonId, pptId) => api.delete(`/presentations/ppt/${salespersonId}/${pptId}`),
+  deletePresentation: (id) => api.delete(`/presentations/${id}`)
 };
