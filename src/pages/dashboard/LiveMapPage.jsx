@@ -3,6 +3,17 @@ import { locationsApi } from '../../api';
 import { useApp } from '../../context/AppContext';
 import { fdt } from '../../utils/helpers';
 
+// A device reports every 5 min while punched in. If we haven't heard from it in
+// more than this window, treat the member as stale/offline regardless of the
+// last status they sent (covers killed app, dead GPS, no signal, denied perms).
+const STALE_MS = 12 * 60 * 1000;
+
+const effectiveStatus = (loc) => {
+  if (!loc?.lastSeen) return 'offline';
+  if (Date.now() - new Date(loc.lastSeen).getTime() > STALE_MS) return 'offline';
+  return loc.status || 'active';
+};
+
 export default function LiveMapPage() {
   const { toast } = useApp();
   const [locations, setLocations] = useState([]);
@@ -13,9 +24,14 @@ export default function LiveMapPage() {
     try {
       const r = await locationsApi.list();
       setLocations(r.data);
-      if (r.data.length > 0 && !selectedLoc) {
-        setSelectedLoc(r.data[0]);
-      }
+      // Keep the selected member in sync with the freshly fetched data so their
+      // panel shows the latest coordinates/lastSeen on every poll (and the
+      // selection isn't lost on refresh).
+      setSelectedLoc((prev) => {
+        if (!prev) return r.data.length > 0 ? r.data[0] : null;
+        const idOf = (l) => l?.userId?._id || l?.userId;
+        return r.data.find((l) => idOf(l) === idOf(prev)) || prev;
+      });
     } catch (e) {
       toast('Failed to load locations');
     } finally {
@@ -53,18 +69,19 @@ export default function LiveMapPage() {
                   background: selectedLoc?.userId === loc.userId ? 'rgba(var(--p-rgb), 0.1)' : 'transparent',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 12
+                  gap: 12,
+                  opacity: effectiveStatus(loc) === 'offline' ? 0.55 : 1
                 }}
               >
                 <div style={{ position: 'relative' }}>
                   <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
                     {loc.name?.substring(0, 2).toUpperCase() || 'U'}
                   </div>
-                  <div style={{ 
+                  <div style={{
                     position: 'absolute', bottom: 0, right: 0, width: 10, height: 10, borderRadius: '50%', border: '2px solid var(--bg)',
-                    background: loc.status === 'active' ? '#4caf50' : 
-                                loc.status === 'meeting' ? '#ff9800' : 
-                                loc.status === 'idle' ? '#ffeb3b' : '#9e9e9e'
+                    background: effectiveStatus(loc) === 'active' ? '#4caf50' :
+                                effectiveStatus(loc) === 'meeting' ? '#ff9800' :
+                                effectiveStatus(loc) === 'idle' ? '#ffeb3b' : '#9e9e9e'
                   }}></div>
                 </div>
                 <div style={{ flex: 1 }}>
@@ -90,10 +107,12 @@ export default function LiveMapPage() {
                 </span>
               </div>
               <span className={`badge ${
-                selectedLoc.status === 'active' ? 'bbg' : 
-                selectedLoc.status === 'meeting' ? 'bba' : 'bbl'
+                effectiveStatus(selectedLoc) === 'active' ? 'bbg' :
+                effectiveStatus(selectedLoc) === 'meeting' ? 'bba' : 'bbl'
               }`}>
-                {selectedLoc.status?.toUpperCase() || 'UNKNOWN'}
+                {effectiveStatus(selectedLoc) === 'offline' && selectedLoc.status !== 'offline'
+                  ? 'STALE — NO RECENT UPDATE'
+                  : effectiveStatus(selectedLoc).toUpperCase()}
               </span>
             </div>
             <div style={{ flex: 1, width: '100%', position: 'relative' }}>

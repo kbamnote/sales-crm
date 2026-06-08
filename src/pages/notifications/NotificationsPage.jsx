@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { notifsApi } from '../../api';
+import { notifsApi, usersApi } from '../../api';
 import { useApp } from '../../context/AppContext';
 import { fdt } from '../../utils/helpers';
 
@@ -8,6 +8,39 @@ export default function NotificationsPage() {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterUnread, setFilterUnread] = useState(false);
+
+  // Compose-and-send state
+  const [employees, setEmployees] = useState([]);
+  const [toUser, setToUser] = useState('');
+  const [title, setTitle] = useState('');
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    usersApi.list()
+      .then((r) => setEmployees(r.data || []))
+      .catch(() => toast('Failed to load employees'));
+  }, []);
+
+  const handleSend = async (e) => {
+    e.preventDefault();
+    if (!toUser) return toast('Select an employee');
+    if (!title.trim() || !message.trim()) return toast('Title and message are required');
+    setSending(true);
+    try {
+      await notifsApi.send({ to: toUser, title: title.trim(), msg: message.trim(), type: 'system' });
+      const name = employees.find((u) => u._id === toUser)?.name || 'employee';
+      toast(`Notification sent to ${name}`);
+      setTitle('');
+      setMessage('');
+      setToUser('');
+      load();
+    } catch (err) {
+      toast(err?.response?.data?.error || 'Failed to send notification');
+    } finally {
+      setSending(false);
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -53,6 +86,52 @@ export default function NotificationsPage() {
         </label>
         <button className="btn btn-sm" onClick={handleMarkAllRead}>Mark All as Read</button>
       </div>
+
+      {/* Send a notification to a particular employee */}
+      <form
+        onSubmit={handleSend}
+        style={{
+          background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8,
+          padding: 16, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10,
+        }}
+      >
+        <strong style={{ fontSize: 14 }}>Send Notification</strong>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <select
+            value={toUser}
+            onChange={(e) => setToUser(e.target.value)}
+            style={{ flex: '1 1 220px', padding: 8, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+          >
+            <option value="">Select employee…</option>
+            {employees.map((u) => (
+              <option key={u._id} value={u._id}>
+                {u.name}{u.role ? ` — ${u.role}` : ''}
+              </option>
+            ))}
+          </select>
+          <input
+            type="text"
+            placeholder="Title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            maxLength={80}
+            style={{ flex: '1 1 220px', padding: 8, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+          />
+        </div>
+        <textarea
+          placeholder="Message"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          rows={3}
+          maxLength={300}
+          style={{ padding: 8, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', resize: 'vertical' }}
+        />
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button type="submit" className="btn btn-sm" disabled={sending}>
+            {sending ? 'Sending…' : 'Send Notification'}
+          </button>
+        </div>
+      </form>
 
       <div className="tw" style={{ background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)' }}>
         {loading ? (

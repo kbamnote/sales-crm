@@ -3,7 +3,7 @@ import { clientsApi, usersApi } from '../../api';
 import { useApp } from '../../context/AppContext';
 import { fd } from '../../utils/helpers';
 
-const TAPIFY_URL = import.meta.env.VITE_TAPIFY_URL || 'https://tapify-backend-production.up.railway.app';
+const TAPIFY_URL = import.meta.env.VITE_TAPIFY_URL || 'https://app.tapify.co.in';
 
 export default function ClientsPage({ myOnly = false }) {
   const { toast, openModal, closeModal } = useApp();

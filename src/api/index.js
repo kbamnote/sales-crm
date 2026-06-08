@@ -97,7 +97,9 @@ export const locationsApi = {
 export const notifsApi = {
   list: (unread) => api.get('/notifications', { params: { unread } }),
   markRead: (id) => api.post(`/notifications/${id}/read`),
-  markAllRead: () => api.post('/notifications/read-all')
+  markAllRead: () => api.post('/notifications/read-all'),
+  // to: 'all' | role | userId. Backend persists + pushes to the recipient(s).
+  send: (data) => api.post('/notifications', data)
 };
 
 export const reportsApi = {
