@@ -86,6 +86,8 @@ export default function TeamPage() {
           <option value="manager">Manager</option>
           <option value="sales">Sales</option>
           <option value="tms">TMS</option>
+          <option value="tme">TME</option>
+          <option value="telecaller">Telecaller</option>
           <option value="hr">HR</option>
         </select>
       </div>
@@ -219,7 +221,7 @@ function UserForm({ user, onSave, onCancel }) {
         <Select label="Role" value={form.role} onChange={v => set('role', v)}
           options={[
             ['admin', 'Admin'], ['manager', 'Manager'], ['sales', 'Sales'],
-            ['tms', 'TMS'], ['tme', 'TME'], ['hr', 'HR']
+            ['tms', 'TMS'], ['tme', 'TME'], ['telecaller', 'Telecaller'], ['hr', 'HR']
           ]} />
         <Input label="Designation" value={form.designation} onChange={v => set('designation', v)} />
         <Input label="Department" value={form.department} onChange={v => set('department', v)} />
