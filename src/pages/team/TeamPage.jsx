@@ -107,8 +107,10 @@ export default function TeamPage() {
                   <tr key={u._id}>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--p)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 'bold' }}>
-                          {u.name.substring(0, 2).toUpperCase()}
+                        <div style={{ width: 30, height: 30, borderRadius: '50%', overflow: 'hidden', background: 'var(--p)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 'bold' }}>
+                          {u.avatar && /^(https?:|data:image)/.test(u.avatar)
+                            ? <img src={u.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            : u.name.substring(0, 2).toUpperCase()}
                         </div>
                         <div>
                           <strong>{u.name}</strong>
@@ -141,6 +143,9 @@ export default function TeamPage() {
 }
 
 // ───────────────────────────────────────────
+const CLOUD_NAME = 'dpreeciaf';
+const UPLOAD_PRESET = 'salescrm_attendance';
+
 function UserForm({ user, onSave, onCancel }) {
   const [form, setForm] = useState({
     name: user?.name || '',
@@ -148,11 +153,38 @@ function UserForm({ user, onSave, onCancel }) {
     phone: user?.phone || '',
     role: user?.role || 'sales',
     employeeId: user?.employeeId || '',
+    designation: user?.designation || '',
+    department: user?.department || '',
+    avatar: user?.avatar || '',
     password: ''
   });
-  
+  const [uploading, setUploading] = useState(false);
+
   const set = (k, v) => setForm({ ...form, [k]: v });
-  
+
+  const isPhoto = form.avatar && /^(https?:|data:image)/.test(form.avatar);
+
+  const uploadPhoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const data = new FormData();
+      data.append('file', file);
+      data.append('upload_preset', UPLOAD_PRESET);
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, {
+        method: 'POST', body: data,
+      });
+      const result = await res.json();
+      if (result.secure_url) set('avatar', result.secure_url);
+      else alert(result.error?.message || 'Upload failed');
+    } catch (err) {
+      alert('Photo upload failed');
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const submit = (e) => {
     e.preventDefault();
     const data = { ...form };
@@ -163,6 +195,23 @@ function UserForm({ user, onSave, onCancel }) {
   return (
     <form onSubmit={submit} style={{ padding: 18 }}>
       <h3 style={{ marginBottom: 14 }}>{user ? 'Edit Member' : 'Add Member'}</h3>
+
+      {/* Profile photo */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
+        <div style={{ width: 64, height: 64, borderRadius: '50%', overflow: 'hidden', background: 'var(--p)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: 18 }}>
+          {isPhoto
+            ? <img src={form.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            : (form.name?.substring(0, 2).toUpperCase() || 'U')}
+        </div>
+        <label className="btn btn-sm" style={{ cursor: 'pointer' }}>
+          {uploading ? 'Uploading…' : (isPhoto ? 'Change Photo' : 'Upload Photo')}
+          <input type="file" accept="image/*" onChange={uploadPhoto} style={{ display: 'none' }} />
+        </label>
+        {isPhoto && (
+          <button type="button" className="btn btn-xs btn-r" onClick={() => set('avatar', '')}>Remove</button>
+        )}
+      </div>
+
       <div className="g2" style={{ gap: 10 }}>
         <Input label="Name *" value={form.name} onChange={v => set('name', v)} required />
         <Input label="Email *" type="email" value={form.email} onChange={v => set('email', v)} required />
@@ -172,18 +221,20 @@ function UserForm({ user, onSave, onCancel }) {
             ['admin', 'Admin'], ['manager', 'Manager'], ['sales', 'Sales'],
             ['tms', 'TMS'], ['tme', 'TME'], ['hr', 'HR']
           ]} />
+        <Input label="Designation" value={form.designation} onChange={v => set('designation', v)} />
+        <Input label="Department" value={form.department} onChange={v => set('department', v)} />
         <Input label="Employee ID" value={form.employeeId} onChange={v => set('employeeId', v)} />
-        <Input 
-          label={user ? "New Password (leave blank to keep)" : "Password *"} 
-          type="password" 
-          value={form.password} 
-          onChange={v => set('password', v)} 
-          required={!user} 
+        <Input
+          label={user ? "New Password (leave blank to keep)" : "Password *"}
+          type="password"
+          value={form.password}
+          onChange={v => set('password', v)}
+          required={!user}
         />
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
         <button type="button" className="btn btn-sm" onClick={onCancel}>Cancel</button>
-        <button type="submit" className="btn btn-p btn-sm">Save</button>
+        <button type="submit" className="btn btn-p btn-sm" disabled={uploading}>Save</button>
       </div>
     </form>
   );
