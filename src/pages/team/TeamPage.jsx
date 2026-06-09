@@ -221,7 +221,8 @@ function UserForm({ user, onSave, onCancel }) {
         <Select label="Role" value={form.role} onChange={v => set('role', v)}
           options={[
             ['admin', 'Admin'], ['manager', 'Manager'], ['sales', 'Sales'],
-            ['tms', 'TMS'], ['tme', 'TME'], ['telecaller', 'Telecaller'], ['hr', 'HR']
+            ['tms', 'TMS'], ['tme', 'TME'], ['telecaller', 'Telecaller'],
+            ['designer', 'Designer'], ['hr', 'HR']
           ]} />
         <Input label="Designation" value={form.designation} onChange={v => set('designation', v)} />
         <Input label="Department" value={form.department} onChange={v => set('department', v)} />
