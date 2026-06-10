@@ -8,6 +8,7 @@ export default function TeamPage() {
   const { toast, openModal, closeModal } = useApp();
   const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState({ role: '', search: '' });
 
@@ -17,8 +18,12 @@ export default function TeamPage() {
       const params = {};
       if (filter.role) params.role = filter.role;
       if (filter.search) params.search = filter.search;
-      const r = await usersApi.list(params);
+      const [r, all] = await Promise.all([
+        usersApi.list(params),
+        usersApi.list(),
+      ]);
       setUsers(r.data);
+      setAllUsers(all.data);
     } catch (e) {
       toast('Failed to load team');
     } finally {
@@ -39,6 +44,7 @@ export default function TeamPage() {
 
   const onAdd = () => openModal(
     <UserForm
+      allUsers={allUsers}
       onSave={async (data) => {
         await usersApi.create(data);
         toast('✅ User created!');
@@ -52,6 +58,7 @@ export default function TeamPage() {
   const onEdit = (u) => openModal(
     <UserForm
       user={u}
+      allUsers={allUsers}
       onSave={async (data) => {
         await usersApi.update(u._id, data);
         toast('✅ Updated!');
@@ -84,11 +91,14 @@ export default function TeamPage() {
           <option value="">All Roles</option>
           <option value="admin">Admin</option>
           <option value="manager">Manager</option>
+          <option value="bdo">BDO</option>
+          <option value="team_leader">Team Leader</option>
           <option value="sales">Sales</option>
           <option value="tms">TMS</option>
           <option value="tme">TME</option>
           <option value="telecaller">Telecaller</option>
           <option value="hr">HR</option>
+          <option value="designer">Designer</option>
         </select>
       </div>
 
@@ -96,15 +106,15 @@ export default function TeamPage() {
         <table>
           <thead>
             <tr>
-              <th>Name</th><th>Role</th><th>Phone</th><th>Email</th>
+              <th>Name</th><th>Role</th><th>Reports To</th><th>Phone</th><th>Email</th>
               <th>Status</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading
-              ? <tr><td colSpan={6} style={{ textAlign: 'center', padding: 14 }}>Loading...</td></tr>
+              ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: 14 }}>Loading...</td></tr>
               : users.length === 0
-                ? <tr><td colSpan={6} style={{ textAlign: 'center', padding: 14, color: 'var(--mu)' }}>No users found</td></tr>
+                ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: 14, color: 'var(--mu)' }}>No users found</td></tr>
                 : users.map(u => (
                   <tr key={u._id}>
                     <td>
@@ -121,6 +131,15 @@ export default function TeamPage() {
                       </div>
                     </td>
                     <td>{u.role}</td>
+                    <td>
+                      {u.managerId ? (
+                        <span style={{ fontSize: 13 }}>
+                          {typeof u.managerId === 'object' ? u.managerId.name : allUsers.find(x => x._id === u.managerId)?.name || '—'}
+                        </span>
+                      ) : (
+                        <span style={{ color: '#e53e3e', fontSize: 12, fontWeight: 500 }}>⚠ Unassigned</span>
+                      )}
+                    </td>
                     <td>{u.phone}</td>
                     <td>{u.email}</td>
                     <td>
@@ -148,7 +167,12 @@ export default function TeamPage() {
 const CLOUD_NAME = 'dpreeciaf';
 const UPLOAD_PRESET = 'salescrm_attendance';
 
-function UserForm({ user, onSave, onCancel }) {
+const MANAGER_ROLES = ['admin', 'manager', 'bdo', 'team_leader'];
+
+function UserForm({ user, onSave, onCancel, allUsers = [] }) {
+  const managerId = user?.managerId
+    ? (typeof user.managerId === 'object' ? user.managerId._id : user.managerId)
+    : '';
   const [form, setForm] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -158,9 +182,14 @@ function UserForm({ user, onSave, onCancel }) {
     designation: user?.designation || '',
     department: user?.department || '',
     avatar: user?.avatar || '',
-    password: ''
+    password: '',
+    managerId: managerId || '',
   });
   const [uploading, setUploading] = useState(false);
+
+  const managerOptions = allUsers.filter(u =>
+    MANAGER_ROLES.includes(u.role) && u._id !== user?._id
+  );
 
   const set = (k, v) => setForm({ ...form, [k]: v });
 
@@ -191,6 +220,7 @@ function UserForm({ user, onSave, onCancel }) {
     e.preventDefault();
     const data = { ...form };
     if (!data.password) delete data.password;
+    if (!data.managerId) data.managerId = null;
     onSave(data);
   };
 
@@ -220,10 +250,38 @@ function UserForm({ user, onSave, onCancel }) {
         <Input label="Phone *" value={form.phone} onChange={v => set('phone', v)} required />
         <Select label="Role" value={form.role} onChange={v => set('role', v)}
           options={[
-            ['admin', 'Admin'], ['manager', 'Manager'], ['sales', 'Sales'],
+            ['admin', 'Admin'], ['manager', 'Manager'], ['bdo', 'BDO'],
+            ['team_leader', 'Team Leader'], ['sales', 'Sales'],
             ['tms', 'TMS'], ['tme', 'TME'], ['telecaller', 'Telecaller'],
             ['designer', 'Designer'], ['hr', 'HR']
           ]} />
+        <div className="fg">
+          <label style={{ fontSize: 11, color: 'var(--mu)', display: 'block', marginBottom: 4 }}>
+            Reports To {!form.managerId && <span style={{ color: '#e53e3e' }}>*</span>}
+          </label>
+          <select
+            value={form.managerId}
+            onChange={e => set('managerId', e.target.value)}
+            style={{
+              width: '100%', padding: 8,
+              border: `1px solid ${!form.managerId ? '#e53e3e' : 'var(--border)'}`,
+              borderRadius: 8,
+              background: !form.managerId ? '#fff5f5' : undefined,
+            }}
+          >
+            <option value="">— No Manager (Top-level) —</option>
+            {managerOptions.map(u => (
+              <option key={u._id} value={u._id}>
+                {u.name} ({u.role})
+              </option>
+            ))}
+          </select>
+          {!form.managerId && (
+            <div style={{ fontSize: 11, color: '#e53e3e', marginTop: 3 }}>
+              Without a manager, this person won't appear in anyone's hierarchy.
+            </div>
+          )}
+        </div>
         <Input label="Designation" value={form.designation} onChange={v => set('designation', v)} />
         <Input label="Department" value={form.department} onChange={v => set('department', v)} />
         <Input label="Employee ID" value={form.employeeId} onChange={v => set('employeeId', v)} />

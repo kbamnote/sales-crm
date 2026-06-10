@@ -46,6 +46,7 @@ export const roleLabel = {
 
 export const getTargetMeta = (role) => {
   if (role === 'tme') return { unit: 'appointments', label: 'Appointment Target', icon: '🗓️' };
+  if (role === 'telecaller') return { unit: 'appointments', label: 'Appointments / month (with clients)', icon: '🗓️' };
   if (role === 'hr') return { unit: 'hirings', label: 'Hiring Target', icon: '👥' };
   if (role === 'tms') return { unit: 'calls', label: 'Call Target', icon: '📞' };
   return { unit: 'revenue', label: 'Revenue Target', icon: '💰' };

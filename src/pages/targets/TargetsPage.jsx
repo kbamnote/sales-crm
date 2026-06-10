@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { targetsApi, usersApi } from '../../api';
 import { useApp } from '../../context/AppContext';
+import { getTargetMeta } from '../../utils/helpers';
 
 export default function TargetsPage() {
   const { toast, openModal, closeModal } = useApp();
@@ -65,9 +66,12 @@ export default function TargetsPage() {
                   const pct = t.target > 0 ? Math.min(100, Math.round((t.achieved / t.target) * 100)) : 0;
                   return (
                     <tr key={t._id}>
-                      <td><strong>{t.userId?.name || 'Unknown User'}</strong></td>
+                      <td>
+                        <strong>{t.userId?.name || 'Unknown User'}</strong>
+                        {t.userId?.role ? <div style={{ fontSize: 10, color: 'var(--mu)' }}>{t.userId.role}</div> : null}
+                      </td>
                       <td>{t.month}</td>
-                      <td>{t.target?.toLocaleString()}</td>
+                      <td>{t.target?.toLocaleString()} <span style={{ fontSize: 11, color: 'var(--mu)' }}>{getTargetMeta(t.userId?.role).unit}</span></td>
                       <td>{t.achieved?.toLocaleString() || 0}</td>
                       <td style={{ width: 150 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -102,7 +106,10 @@ function TargetForm({ month, onSave, onCancel }) {
   }, []);
   
   const set = (k, v) => setForm({ ...form, [k]: v });
-  
+
+  const selectedUser = users.find(u => u._id === form.userId);
+  const meta = getTargetMeta(selectedUser?.role);
+
   const submit = (e) => {
     e.preventDefault();
     onSave({ ...form, target: Number(form.target) });
@@ -113,10 +120,22 @@ function TargetForm({ month, onSave, onCancel }) {
       <h3 style={{ marginBottom: 14 }}>Set Target</h3>
       <div className="g2" style={{ gap: 10 }}>
         <Select label="User *" value={form.userId} onChange={v => set('userId', v)}
-          options={[['', '-- Select User --'], ...users.map(u => [u._id, u.name])]} />
+          options={[['', '-- Select User --'], ...users.map(u => [u._id, `${u.name}${u.role ? ' — ' + u.role : ''}`])]} />
         <Input label="Month *" type="month" value={form.month} onChange={v => set('month', v)} required />
-        <Input label="Target Value *" type="number" value={form.target} onChange={v => set('target', v)} required />
+        <Input
+          label={`${meta.icon} ${meta.label} *`}
+          type="number"
+          value={form.target}
+          onChange={v => set('target', v)}
+          required
+          placeholder={`Number of ${meta.unit} for the month`}
+        />
       </div>
+      {form.userId && (
+        <div style={{ fontSize: 12, color: 'var(--mu)', marginTop: 8 }}>
+          Setting <strong>{meta.unit}</strong> target for {selectedUser?.name}.
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 8, marginTop: 16, justifyContent: 'flex-end' }}>
         <button type="button" className="btn btn-sm" onClick={onCancel}>Cancel</button>
         <button type="submit" className="btn btn-p btn-sm" disabled={!form.userId}>Save</button>
