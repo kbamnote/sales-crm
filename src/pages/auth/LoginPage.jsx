@@ -8,8 +8,8 @@ export default function LoginPage() {
   const location = useLocation();
   const { login, user } = useAuth();
   const { toast } = useApp();
-  const [email, setEmail] = useState('admin@co.com');
-  const [password, setPassword] = useState('admin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
   // If already logged in, redirect
@@ -89,16 +89,6 @@ export default function LoginPage() {
             {loading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-
-        <div style={{
-          marginTop: 16, padding: 12, background: '#F0F4FF', borderRadius: 8,
-          fontSize: 11, color: '#64748B'
-        }}>
-          <strong>Demo accounts:</strong><br />
-          admin@co.com / admin (Admin)<br />
-          wasim@co.com / 1234 (Manager)<br />
-          purushottam@co.com / 1234 (Sales)
-        </div>
       </div>
     </div>
   );
