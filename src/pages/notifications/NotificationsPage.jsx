@@ -15,6 +15,10 @@ export default function NotificationsPage() {
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
+  const [mode, setMode] = useState('individual'); // 'individual' | 'broadcast'
+  const [scheduleOn, setScheduleOn] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduledNotifs, setScheduledNotifs] = useState([]);
 
   useEffect(() => {
     usersApi.list()
@@ -24,16 +28,33 @@ export default function NotificationsPage() {
 
   const handleSend = async (e) => {
     e.preventDefault();
-    if (!toUser) return toast('Select an employee');
+    if (mode === 'individual' && !toUser) return toast('Select an employee');
     if (!title.trim() || !message.trim()) return toast('Title and message are required');
+    if (scheduleOn && !scheduleDate) return toast('Select a schedule date');
+    
     setSending(true);
     try {
-      await notifsApi.send({ to: toUser, title: title.trim(), msg: message.trim(), type: 'system' });
-      const name = employees.find((u) => u._id === toUser)?.name || 'employee';
-      toast(`Notification sent to ${name}`);
+      const payload = {
+        to: mode === 'broadcast' ? 'all' : toUser,
+        title: title.trim(),
+        msg: message.trim(),
+        type: 'system',
+        toName: mode === 'broadcast' ? 'All Employees' : employees.find((u) => u._id === toUser)?.name || ''
+      };
+      if (scheduleOn) {
+        payload.scheduledAt = new Date(scheduleDate).toISOString();
+      }
+      
+      await notifsApi.send(payload);
+      
+      const targetName = mode === 'broadcast' ? 'all employees' : (employees.find((u) => u._id === toUser)?.name || 'employee');
+      toast(scheduleOn ? `Notification scheduled for ${targetName}` : `Notification sent to ${targetName}`);
+      
       setTitle('');
       setMessage('');
       setToUser('');
+      setScheduleOn(false);
+      setScheduleDate('');
       load();
     } catch (err) {
       toast(err?.response?.data?.error || 'Failed to send notification');
@@ -47,6 +68,10 @@ export default function NotificationsPage() {
     try {
       const r = await notifsApi.list(filterUnread ? true : undefined);
       setNotifications(r.data);
+      try {
+        const s = await notifsApi.listScheduled();
+        setScheduledNotifs(s.data);
+      } catch (err) { /* ignore if user lacks role */ }
     } catch (e) {
       toast('Failed to load notifications');
     } finally {
@@ -71,6 +96,17 @@ export default function NotificationsPage() {
     } catch (e) { toast('Failed to mark all as read'); }
   };
 
+  const handleCancelScheduled = async (id) => {
+    if (!window.confirm('Cancel this scheduled notification?')) return;
+    try {
+      await notifsApi.cancelScheduled(id);
+      toast('Scheduled notification cancelled');
+      load();
+    } catch (e) {
+      toast('Failed to cancel scheduled notification');
+    }
+  };
+
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, alignItems: 'center' }}>
@@ -87,7 +123,7 @@ export default function NotificationsPage() {
         <button className="btn btn-sm" onClick={handleMarkAllRead}>Mark All as Read</button>
       </div>
 
-      {/* Send a notification to a particular employee */}
+      {/* Send / Broadcast Notification */}
       <form
         onSubmit={handleSend}
         style={{
@@ -95,20 +131,32 @@ export default function NotificationsPage() {
           padding: 16, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10,
         }}
       >
-        <strong style={{ fontSize: 14 }}>Send Notification</strong>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+          <strong style={{ fontSize: 14 }}>Compose Notification</strong>
+          <div style={{ display: 'flex', gap: 15, fontSize: 13 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+              <input type="radio" name="notifMode" checked={mode === 'individual'} onChange={() => setMode('individual')} /> Specific Employee
+            </label>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+              <input type="radio" name="notifMode" checked={mode === 'broadcast'} onChange={() => setMode('broadcast')} /> Broadcast to All
+            </label>
+          </div>
+        </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <select
-            value={toUser}
-            onChange={(e) => setToUser(e.target.value)}
-            style={{ flex: '1 1 220px', padding: 8, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
-          >
-            <option value="">Select employee…</option>
-            {employees.map((u) => (
-              <option key={u._id} value={u._id}>
-                {u.name}{u.role ? ` — ${u.role}` : ''}
-              </option>
-            ))}
-          </select>
+          {mode === 'individual' && (
+            <select
+              value={toUser}
+              onChange={(e) => setToUser(e.target.value)}
+              style={{ flex: '1 1 220px', padding: 8, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+            >
+              <option value="">Select employee…</option>
+              {employees.map((u) => (
+                <option key={u._id} value={u._id}>
+                  {u.name}{u.role ? ` — ${u.role}` : ''}
+                </option>
+              ))}
+            </select>
+          )}
           <input
             type="text"
             placeholder="Title"
@@ -126,12 +174,47 @@ export default function NotificationsPage() {
           maxLength={300}
           style={{ padding: 8, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', resize: 'vertical' }}
         />
-        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+              <input type="checkbox" checked={scheduleOn} onChange={(e) => setScheduleOn(e.target.checked)} /> Schedule for later
+            </label>
+            {scheduleOn && (
+              <input
+                type="datetime-local"
+                value={scheduleDate}
+                onChange={(e) => setScheduleDate(e.target.value)}
+                style={{ padding: 6, borderRadius: 4, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+              />
+            )}
+          </div>
           <button type="submit" className="btn btn-sm" disabled={sending}>
-            {sending ? 'Sending…' : 'Send Notification'}
+            {sending ? 'Processing…' : (scheduleOn ? 'Schedule Notification' : 'Send Notification')}
           </button>
         </div>
       </form>
+
+      {/* Scheduled Notifications */}
+      {scheduledNotifs.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          <h3 style={{ fontSize: 15, marginBottom: 8 }}>Upcoming Scheduled</h3>
+          <div className="tw" style={{ background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)' }}>
+            {scheduledNotifs.map(sn => (
+              <div key={sn._id} style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: '600', fontSize: 14 }}>{sn.title}</div>
+                  <div style={{ fontSize: 12, color: 'var(--mu)', marginTop: 2 }}>
+                    To: {sn.to === 'all' ? 'All Employees' : sn.toName || sn.to} &middot; Scheduled for: {fdt(sn.scheduledAt)}
+                  </div>
+                </div>
+                <button className="btn btn-xs" style={{ background: 'var(--danger, #ef4444)', color: '#fff', border: 'none' }} onClick={() => handleCancelScheduled(sn._id)}>
+                  Cancel
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="tw" style={{ background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)' }}>
         {loading ? (

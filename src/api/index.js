@@ -99,7 +99,9 @@ export const notifsApi = {
   markRead: (id) => api.post(`/notifications/${id}/read`),
   markAllRead: () => api.post('/notifications/read-all'),
   // to: 'all' | role | userId. Backend persists + pushes to the recipient(s).
-  send: (data) => api.post('/notifications', data)
+  send: (data) => api.post('/notifications', data),
+  listScheduled: () => api.get('/notifications/scheduled'),
+  cancelScheduled: (id) => api.delete(`/notifications/scheduled/${id}`)
 };
 
 export const reportsApi = {
