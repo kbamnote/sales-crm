@@ -57,6 +57,10 @@ export const NAV_ITEMS = [
     roles: ['admin','manager','bdo','team_leader','sales','tms','tme','hr'] },
   { id: 'presentations', path: '/presentations', ic: '🎤', label: 'Presentations',
     roles: ['admin','manager'], sec: 'Tools' },
+  { id: 'send-membership', path: '/send-membership', ic: '🏅', label: 'Send Membership',
+    roles: ['admin','manager','hr','sales'], sec: 'Tools' },
+  { id: 'send-tapify-welcome', path: '/send-tapify-welcome', ic: '💌', label: 'Send Tapify Welcome',
+    roles: ['admin','manager','hr','sales'], sec: 'Tools' },
 
   // Admin
   { id: 'company-settings', path: '/settings', ic: '⚙️', label: 'Company Settings',

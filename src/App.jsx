@@ -40,6 +40,8 @@ import PresentationsPage from './pages/presentations/PresentationsPage';
 // Phase 4
 import SettingsPage from './pages/settings/SettingsPage';
 import ProfilePage from './pages/profile/ProfilePage';
+import SendMembershipPage from './pages/sendMembership/SendMembershipPage';
+import SendTapifyWelcomePage from './pages/sendTapifyWelcome/SendTapifyWelcomePage';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -82,6 +84,8 @@ export default function App() {
         <Route path="chat" element={<ChatPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="presentations" element={<PresentationsPage />} />
+        <Route path="send-membership" element={<SendMembershipPage />} />
+        <Route path="send-tapify-welcome" element={<SendTapifyWelcomePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -172,3 +172,11 @@ export const presentationsApi = {
   deletePpt: (salespersonId, pptId) => api.delete(`/presentations/ppt/${salespersonId}/${pptId}`),
   deletePresentation: (id) => api.delete(`/presentations/${id}`)
 };
+
+export const membershipApi = {
+  send: (data) => api.post('/membership/send', data)
+};
+
+export const tapifyWelcomeApi = {
+  send: (data) => api.post('/tapify-welcome/send', data)
+};
