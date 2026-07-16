@@ -27,6 +27,12 @@ export const usersApi = {
     api.post(`/users/${id}/admin-change-password`, { newPassword })
 };
 
+export const fulfillmentApi = {
+  list: (params) => api.get('/fulfillments', { params }),
+  get: (id) => api.get(`/fulfillments/${id}`),
+  stats: () => api.get('/fulfillments/stats'),
+};
+
 export const clientsApi = {
   list: (params) => api.get('/clients', { params }),
   get: (id) => api.get(`/clients/${id}`),

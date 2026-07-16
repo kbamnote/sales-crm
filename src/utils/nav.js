@@ -23,6 +23,8 @@ export const NAV_ITEMS = [
     roles: ['admin','manager','bdo','team_leader','hr'] },
   { id: 'deals', path: '/deals', ic: '💰', label: 'Deals & Payments',
     roles: ['admin','manager','bdo','team_leader','sales'] },
+  { id: 'fulfillment', path: '/fulfillment', ic: '📦', label: 'Order Tracking',
+    roles: ['admin','manager'] },
 
   // Pipeline
   { id: 'leads', path: '/leads', ic: '💡', label: 'Leads',

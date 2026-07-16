@@ -5,6 +5,10 @@ import Layout from './components/Layout';
 // Auth
 import LoginPage from './pages/auth/LoginPage';
 
+// Public customer forms (token-gated, no login)
+import PublicDataFormPage from './pages/public/PublicDataFormPage';
+import PublicFeedbackPage from './pages/public/PublicFeedbackPage';
+
 // Core pages
 import DashboardPage from './pages/dashboard/DashboardPage';
 import LeadsPage from './pages/leads/LeadsPage';
@@ -24,6 +28,7 @@ import AppointmentsPage from './pages/appointments/AppointmentsPage';
 
 // Phase 2
 import DealsPage from './pages/deals/DealsPage';
+import FulfillmentBoardPage from './pages/fulfillment/FulfillmentBoardPage';
 import TargetsPage from './pages/targets/TargetsPage';
 import TeamPage from './pages/team/TeamPage';
 import PermissionsPage from './pages/permissions/PermissionsPage';
@@ -55,6 +60,11 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+
+      {/* Public customer forms — no auth */}
+      <Route path="/form/:token" element={<PublicDataFormPage />} />
+      <Route path="/feedback/:token" element={<PublicFeedbackPage />} />
+
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<DashboardPage />} />
         <Route path="leads" element={<LeadsPage />} />
@@ -66,6 +76,7 @@ export default function App() {
         <Route path="my-meetings" element={<MeetingsPage />} />
         <Route path="deals" element={<DealsPage />} />
         <Route path="my-deals" element={<DealsPage />} />
+        <Route path="fulfillment" element={<FulfillmentBoardPage />} />
         <Route path="calls" element={<CallsPage />} />
         <Route path="my-calls" element={<CallsPage />} />
         <Route path="my-target" element={<TargetsPage />} />
