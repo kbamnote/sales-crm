@@ -42,7 +42,8 @@ export const roleLabel = {
   admin: 'Administrator', manager: 'Manager', bdo: 'BDO',
   team_leader: 'Team Leader', sales: 'Sales Executive',
   tms: 'TMS Agent', tme: 'TME', hr: 'Senior HR',
-  telecaller: 'Telecaller', designer: 'Designer', social_media: 'Social Media Manager'
+  telecaller: 'Telecaller', designer: 'Designer', social_media: 'Social Media Manager',
+  assistant_hr: 'Assistant HR'
 };
 
 export const getTargetMeta = (role) => {
