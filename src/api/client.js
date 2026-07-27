@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://sales-crm-backend-production-0187.up.railway.app/api'
+  baseURL: import.meta.env.VITE_API_URL || 'https://crm-api.tapify.co.in/api'
 });
 
 // Attach JWT
