@@ -3,6 +3,9 @@ import { notifsApi, usersApi } from '../../api';
 import { useApp } from '../../context/AppContext';
 import { fdt } from '../../utils/helpers';
 
+const _now = new Date();
+const DEFAULT_MONTH = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}`;
+
 export default function NotificationsPage() {
   const { toast } = useApp();
   const [notifications, setNotifications] = useState([]);
@@ -16,9 +19,20 @@ export default function NotificationsPage() {
   const [message, setMessage] = useState('');
   const [sending, setSending] = useState(false);
   const [mode, setMode] = useState('individual'); // 'individual' | 'broadcast'
-  const [scheduleOn, setScheduleOn] = useState(false);
+  const [deliverMode, setDeliverMode] = useState('now'); // 'now' | 'once' | 'monthly'
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduledNotifs, setScheduledNotifs] = useState([]);
+  // Monthly-schedule state
+  const [month, setMonth] = useState(DEFAULT_MONTH);
+  const [time, setTime] = useState('');
+  const [days, setDays] = useState([]);
+  const [monthNotifs, setMonthNotifs] = useState([]);
+  const [monthLoading, setMonthLoading] = useState(false);
+
+  const scheduleOn = deliverMode === 'once'; // keeps the one-time path's label/logic intact
+  const [yy, mm] = (month || '').split('-').map(Number);
+  const daysInMonth = yy && mm ? new Date(yy, mm, 0).getDate() : 31;
+  const toggleDay = (d) => setDays(prev => prev.includes(d) ? prev.filter((x) => x !== d) : [...prev, d].sort((a, b) => a - b));
 
   useEffect(() => {
     usersApi.list()
@@ -31,9 +45,34 @@ export default function NotificationsPage() {
     if (mode === 'individual' && !toUser) return toast('Select an employee');
     if (!title.trim() || !message.trim()) return toast('Title and message are required');
     if (scheduleOn && !scheduleDate) return toast('Select a schedule date');
-    
+    if (deliverMode === 'monthly') {
+      if (!month) return toast('Select a month');
+      if (!time) return toast('Select a time');
+      if (!days.length) return toast('Select at least one day');
+    }
+
     setSending(true);
     try {
+      if (deliverMode === 'monthly') {
+        const res = await notifsApi.monthly({
+          month,
+          days,
+          time,
+          title: title.trim(),
+          msg: message.trim(),
+          to: mode === 'broadcast' ? 'all' : toUser,
+          toName: mode === 'broadcast' ? 'All Employees' : employees.find((u) => u._id === toUser)?.name || ''
+        });
+        toast(`Created ${res?.data?.created ?? 0} notification(s) for ${month}`);
+        setTitle('');
+        setMessage('');
+        setToUser('');
+        setDays([]);
+        setTime('');
+        load();
+        loadMonth(month);
+        return;
+      }
       const payload = {
         to: mode === 'broadcast' ? 'all' : toUser,
         title: title.trim(),
@@ -53,7 +92,7 @@ export default function NotificationsPage() {
       setTitle('');
       setMessage('');
       setToUser('');
-      setScheduleOn(false);
+      setDeliverMode('now');
       setScheduleDate('');
       load();
     } catch (err) {
@@ -81,6 +120,21 @@ export default function NotificationsPage() {
 
   useEffect(() => { load(); }, [filterUnread]);
 
+  const loadMonth = async (m) => {
+    if (!m) return;
+    setMonthLoading(true);
+    try {
+      const r = await notifsApi.listMonth(m);
+      setMonthNotifs(r.data || []);
+    } catch (err) { /* ignore if user lacks role */ }
+    finally { setMonthLoading(false); }
+  };
+
+  useEffect(() => {
+    setMonthNotifs([]);
+    if (deliverMode === 'monthly') loadMonth(month);
+  }, [deliverMode, month]);
+
   const handleMarkRead = async (id) => {
     try {
       await notifsApi.markRead(id);
@@ -102,6 +156,7 @@ export default function NotificationsPage() {
       await notifsApi.cancelScheduled(id);
       toast('Scheduled notification cancelled');
       load();
+      if (deliverMode === 'monthly') loadMonth(month);
     } catch (e) {
       toast('Failed to cancel scheduled notification');
     }
@@ -142,6 +197,18 @@ export default function NotificationsPage() {
             </label>
           </div>
         </div>
+        <div style={{ display: 'flex', gap: 15, fontSize: 13, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ color: 'var(--mu)' }}>Deliver:</span>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+            <input type="radio" name="deliverMode" checked={deliverMode === 'now'} onChange={() => setDeliverMode('now')} /> Send now
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+            <input type="radio" name="deliverMode" checked={deliverMode === 'once'} onChange={() => setDeliverMode('once')} /> Schedule one-time
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+            <input type="radio" name="deliverMode" checked={deliverMode === 'monthly'} onChange={() => setDeliverMode('monthly')} /> Schedule monthly
+          </label>
+        </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {mode === 'individual' && (
             <select
@@ -174,25 +241,96 @@ export default function NotificationsPage() {
           maxLength={300}
           style={{ padding: 8, borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', resize: 'vertical' }}
         />
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
-              <input type="checkbox" checked={scheduleOn} onChange={(e) => setScheduleOn(e.target.checked)} /> Schedule for later
-            </label>
-            {scheduleOn && (
+        {deliverMode === 'monthly' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
               <input
-                type="datetime-local"
-                value={scheduleDate}
-                onChange={(e) => setScheduleDate(e.target.value)}
+                type="month"
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
                 style={{ padding: 6, borderRadius: 4, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
               />
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                style={{ padding: 6, borderRadius: 4, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+              />
+              <span style={{ fontSize: 12, color: 'var(--mu)' }}>Tap the days it should fire (days not in the month are disabled).</span>
+            </div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => {
+                const inMonth = d <= daysInMonth;
+                const active = days.includes(d);
+                return (
+                  <button
+                    key={d}
+                    type="button"
+                    disabled={!inMonth}
+                    onClick={() => toggleDay(d)}
+                    style={{
+                      width: 34, height: 34, borderRadius: 6, fontSize: 12,
+                      cursor: inMonth ? 'pointer' : 'not-allowed',
+                      border: active ? '1px solid var(--p, #6c5ce7)' : '1px solid var(--border)',
+                      background: active ? 'var(--p, #6c5ce7)' : 'var(--bg)',
+                      color: active ? '#fff' : (inMonth ? 'var(--text)' : 'var(--mu)'),
+                      opacity: inMonth ? 1 : 0.45,
+                    }}
+                  >{d}</button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13 }}>
+            {deliverMode === 'once' && (
+              <>
+                <span style={{ color: 'var(--mu)' }}>Deliver at:</span>
+                <input
+                  type="datetime-local"
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                  style={{ padding: 6, borderRadius: 4, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)' }}
+                />
+              </>
             )}
           </div>
           <button type="submit" className="btn btn-sm" disabled={sending}>
-            {sending ? 'Processing…' : (scheduleOn ? 'Schedule Notification' : 'Send Notification')}
+            {sending ? 'Processing…' : (deliverMode === 'monthly' ? 'Create Monthly Schedule' : (scheduleOn ? 'Schedule Notification' : 'Send Notification'))}
           </button>
         </div>
       </form>
+
+      {/* Monthly schedule preview */}
+      {deliverMode === 'monthly' && (
+        <div style={{ marginBottom: 16 }}>
+          <h3 style={{ fontSize: 15, marginBottom: 8 }}>
+            {month ? `Schedule for ${month}` : 'Monthly Schedule'} {monthLoading && <span style={{ fontSize: 12, color: 'var(--mu)' }}>Loading…</span>}
+          </h3>
+          {monthNotifs.length === 0 ? (
+            <div style={{ fontSize: 13, color: 'var(--mu)' }}>No scheduled notifications for this month yet.</div>
+          ) : (
+            <div className="tw" style={{ background: 'var(--bg)', borderRadius: 8, border: '1px solid var(--border)' }}>
+              {monthNotifs.map(sn => (
+                <div key={sn._id} style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontWeight: '600', fontSize: 14 }}>{sn.title}</div>
+                    <div style={{ fontSize: 12, color: 'var(--mu)', marginTop: 2 }}>
+                      {fdt(sn.scheduledAt)} &middot; To: {sn.to === 'all' ? 'All Employees' : sn.toName || sn.to} &middot; {sn.status}
+                    </div>
+                  </div>
+                  {sn.status === 'pending' && (
+                    <button className="btn btn-xs" style={{ background: 'var(--danger, #ef4444)', color: '#fff', border: 'none' }} onClick={() => handleCancelScheduled(sn._id)}>
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Scheduled Notifications */}
       {scheduledNotifs.length > 0 && (

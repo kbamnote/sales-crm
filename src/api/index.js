@@ -107,7 +107,11 @@ export const notifsApi = {
   // to: 'all' | role | userId. Backend persists + pushes to the recipient(s).
   send: (data) => api.post('/notifications', data),
   listScheduled: () => api.get('/notifications/scheduled'),
-  cancelScheduled: (id) => api.delete(`/notifications/scheduled/${id}`)
+  cancelScheduled: (id) => api.delete(`/notifications/scheduled/${id}`),
+  // Set a whole month's schedule in one go: { month: 'YYYY-MM', days: [1..31], time: 'HH:MM', title, msg, to, toName }.
+  monthly: (data) => api.post('/notifications/monthly', data),
+  // Existing scheduled instances within a given month (for the preview list).
+  listMonth: (month) => api.get('/notifications/monthly', { params: { month } })
 };
 
 export const reportsApi = {
