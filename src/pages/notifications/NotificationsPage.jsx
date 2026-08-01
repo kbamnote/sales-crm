@@ -58,6 +58,9 @@ export default function NotificationsPage() {
           month,
           days,
           time,
+          // The picked time is wall-clock in THIS browser's zone; the server is
+          // UTC, so send the offset or it would schedule 5.5h off for IST.
+          tzOffset: new Date().getTimezoneOffset(),
           title: title.trim(),
           msg: message.trim(),
           to: mode === 'broadcast' ? 'all' : toUser,
