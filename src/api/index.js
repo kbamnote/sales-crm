@@ -24,7 +24,8 @@ export const usersApi = {
   resign: (id, data) => api.post(`/users/${id}/resign`, data),
   shiftDept: (id, data) => api.post(`/users/${id}/shift-department`, data),
   adminChangePassword: (id, newPassword) =>
-    api.post(`/users/${id}/admin-change-password`, { newPassword })
+    api.post(`/users/${id}/admin-change-password`, { newPassword }),
+  setActive: (id, active) => api.post(`/users/${id}/set-active`, { active })
 };
 
 export const fulfillmentApi = {

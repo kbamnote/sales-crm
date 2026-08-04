@@ -42,6 +42,19 @@ export default function TeamPage() {
     } catch (e) { toast('Delete failed'); }
   };
 
+  const handleToggleActive = async (u) => {
+    const next = !u.active;
+    const msg = next
+      ? `Reactivate ${u.name}'s account?`
+      : `Deactivate ${u.name}'s account? They will no longer be able to log in.`;
+    if (!window.confirm(msg)) return;
+    try {
+      await usersApi.setActive(u._id, next);
+      toast(next ? '✅ Account activated' : '✅ Account deactivated');
+      load();
+    } catch (e) { toast(e.response?.data?.error || 'Update failed'); }
+  };
+
   const onAdd = () => openModal(
     <UserForm
       allUsers={allUsers}
@@ -145,12 +158,25 @@ export default function TeamPage() {
                     <td>{u.phone}</td>
                     <td>{u.email}</td>
                     <td>
-                      <span className={`badge ${u.employeeStatus === 'active' || u.active ? 'bbg' : 'bbr'}`}>
-                        {u.employeeStatus || (u.active ? 'Active' : 'Inactive')}
+                      <span className={`badge ${u.active === false
+                        ? 'bbr'
+                        : u.employeeStatus === 'on_leave' ? 'bba'
+                        : (u.employeeStatus === 'resigned' || u.employeeStatus === 'terminated') ? 'bbr'
+                        : 'bbg'}`}>
+                        {u.active === false ? 'Inactive' : (u.employeeStatus || 'Active')}
                       </span>
                     </td>
                     <td style={{ display: 'flex', gap: 4 }}>
                       <button className="btn btn-xs btn-p" onClick={() => onEdit(u)}>Edit</button>
+                      {currentUser?.role === 'admin' && (
+                        <button
+                          className={`btn btn-xs ${u.active === false ? 'btn-g' : 'btn-r'}`}
+                          onClick={() => handleToggleActive(u)}
+                          title={u.active === false ? 'Activate login' : 'Deactivate login'}
+                        >
+                          {u.active === false ? 'Activate' : 'Deactivate'}
+                        </button>
+                      )}
                       {currentUser?.role === 'admin' && (
                         <button className="btn btn-xs btn-r" onClick={() => handleDelete(u._id)}>×</button>
                       )}
