@@ -126,7 +126,8 @@ export const attendanceApi = {
   my: (month) => api.get('/attendance/my', { params: { month } }),
   list: (params) => api.get('/attendance', { params }),
   punchIn: (data) => api.post('/attendance/punch-in', data),
-  punchOut: (data) => api.post('/attendance/punch-out', data)
+  punchOut: (data) => api.post('/attendance/punch-out', data),
+  lateStaff: (month) => api.get('/attendance/late-staff', { params: { month } })
 };
 
 export const fieldVisitsApi = {
