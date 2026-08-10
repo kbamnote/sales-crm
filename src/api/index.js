@@ -14,6 +14,8 @@ export const authApi = {
 
 export const usersApi = {
   list: (params) => api.get('/users', { params }),
+  // Lightweight directory of active users (chat pickers, route-history member picker).
+  contacts: () => api.get('/users/contacts'),
   get: (id) => api.get(`/users/${id}`),
   create: (data) => api.post('/users', data),
   update: (id, data) => api.put(`/users/${id}`, data),
