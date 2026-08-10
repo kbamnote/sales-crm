@@ -11,6 +11,7 @@
 import { useState, useEffect } from 'react';
 import { leadsApi, usersApi } from '../../api';
 import { useApp } from '../../context/AppContext';
+import BulkWhatsAppModal from '../../components/BulkWhatsAppModal';
 import { fd } from '../../utils/helpers';
 
 export default function LeadsPage() {
@@ -19,6 +20,8 @@ export default function LeadsPage() {
   const [tmsUsers, setTmsUsers] = useState([]);
   const [filter, setFilter] = useState({ status: '', search: '' });
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -96,11 +99,35 @@ export default function LeadsPage() {
     />
   );
 
+  // Bulk WhatsApp selection helpers.
+  const toggle = (id) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+  const toggleAll = () => {
+    if (selected.size === leads.length) setSelected(new Set());
+    else setSelected(new Set(leads.map(l => l._id)));
+  };
+  const clearSelection = () => { setSelected(new Set()); setBulkOpen(false); };
+  const selectedRecipients = leads
+    .filter(l => selected.has(l._id) && l.phone)
+    .map(l => ({ _id: l._id, name: l.name, phone: l.phone }));
+
   return (
     <div>
+      <BulkWhatsAppModal visible={bulkOpen} onClose={clearSelection} recipients={selectedRecipients} entity="lead" />
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         <button className="btn btn-p btn-sm" onClick={onAdd}>+ Add Lead</button>
         <button className="btn btn-sm" onClick={onBulkUpload}>📥 Bulk Upload</button>
+        {selected.size > 0 && (
+          <button className="btn btn-sm" style={{ background: '#25D366', color: '#fff', borderColor: '#25D366' }}
+            onClick={() => setBulkOpen(true)}>
+            💬 WhatsApp ({selectedRecipients.length})
+          </button>
+        )}
         <input
           className="btn btn-sm"
           style={{ flex: 1, minWidth: 180 }}
@@ -127,17 +154,19 @@ export default function LeadsPage() {
         <table>
           <thead>
             <tr>
+              <th><input type="checkbox" checked={selected.size > 0 && selected.size === leads.length} onChange={toggleAll} /></th>
               <th>Name</th><th>Phone</th><th>Company</th><th>Source</th>
               <th>Status</th><th>Created</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading
-              ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: 14 }}>Loading...</td></tr>
+              ? <tr><td colSpan={8} style={{ textAlign: 'center', padding: 14 }}>Loading...</td></tr>
               : leads.length === 0
-                ? <tr><td colSpan={7} style={{ textAlign: 'center', padding: 14, color: 'var(--mu)' }}>No leads</td></tr>
+                ? <tr><td colSpan={8} style={{ textAlign: 'center', padding: 14, color: 'var(--mu)' }}>No leads</td></tr>
                 : leads.map(l => (
-                  <tr key={l._id}>
+                  <tr key={l._id} style={selected.has(l._id) ? { background: '#F0FDF4' } : undefined}>
+                    <td><input type="checkbox" checked={selected.has(l._id)} onChange={() => toggle(l._id)} /></td>
                     <td><strong>{l.name}</strong></td>
                     <td>{l.phone}</td>
                     <td>{l.company || '-'}</td>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { clientsApi, usersApi } from '../../api';
 import { useApp } from '../../context/AppContext';
+import BulkWhatsAppModal from '../../components/BulkWhatsAppModal';
 import { fd } from '../../utils/helpers';
 
 const TAPIFY_URL = import.meta.env.VITE_TAPIFY_URL || 'https://app.tapify.co.in';
@@ -11,6 +12,8 @@ export default function ClientsPage({ myOnly = false }) {
   const [salesUsers, setSalesUsers] = useState([]);
   const [filter, setFilter] = useState({ status: '', search: '' });
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(new Set());
+  const [bulkOpen, setBulkOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -94,10 +97,34 @@ export default function ClientsPage({ myOnly = false }) {
     />
   );
 
+  // Bulk WhatsApp selection helpers.
+  const toggle = (id) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+  const toggleAll = () => {
+    if (selected.size === clients.length) setSelected(new Set());
+    else setSelected(new Set(clients.map(c => c._id)));
+  };
+  const clearSelection = () => { setSelected(new Set()); setBulkOpen(false); };
+  const selectedRecipients = clients
+    .filter(c => selected.has(c._id) && c.phone)
+    .map(c => ({ _id: c._id, name: c.name, phone: c.phone }));
+
   return (
     <div>
+      <BulkWhatsAppModal visible={bulkOpen} onClose={clearSelection} recipients={selectedRecipients} entity="client" />
       <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
         <button className="btn btn-p btn-sm" onClick={onAdd}>+ Add Client</button>
+        {selected.size > 0 && (
+          <button className="btn btn-sm" style={{ background: '#25D366', color: '#fff', borderColor: '#25D366' }}
+            onClick={() => setBulkOpen(true)}>
+            💬 WhatsApp ({selectedRecipients.length})
+          </button>
+        )}
         <input
           className="btn btn-sm"
           style={{ flex: 1, minWidth: 180 }}
@@ -123,17 +150,19 @@ export default function ClientsPage({ myOnly = false }) {
         <table>
           <thead>
             <tr>
+              <th><input type="checkbox" checked={selected.size > 0 && selected.size === clients.length} onChange={toggleAll} /></th>
               <th>Name</th><th>Phone</th><th>Company</th><th>City</th>
               <th>Status</th><th>Tapify</th><th>Created</th><th>Actions</th>
             </tr>
           </thead>
           <tbody>
             {loading
-              ? <tr><td colSpan={8} style={{ textAlign: 'center', padding: 14 }}>Loading...</td></tr>
+              ? <tr><td colSpan={9} style={{ textAlign: 'center', padding: 14 }}>Loading...</td></tr>
               : clients.length === 0
-                ? <tr><td colSpan={8} style={{ textAlign: 'center', padding: 14, color: 'var(--mu)' }}>No clients</td></tr>
+                ? <tr><td colSpan={9} style={{ textAlign: 'center', padding: 14, color: 'var(--mu)' }}>No clients</td></tr>
                 : clients.map(c => (
-                  <tr key={c._id}>
+                  <tr key={c._id} style={selected.has(c._id) ? { background: '#F0FDF4' } : undefined}>
+                    <td><input type="checkbox" checked={selected.has(c._id)} onChange={() => toggle(c._id)} /></td>
                     <td><strong>{c.name}</strong>{c.email && <div style={{ fontSize: 11, color: 'var(--mu)' }}>{c.email}</div>}</td>
                     <td>{c.phone}</td>
                     <td>{c.company || '-'}</td>

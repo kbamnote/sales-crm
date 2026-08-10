@@ -65,7 +65,11 @@ export const leadsApi = {
   delete: (id) => api.delete(`/leads/${id}`),
   convert: (id) => api.post(`/leads/${id}/convert`),
   bulkUpload: (leads, assignedTMS) => api.post('/leads/bulk', { leads, assignedTMS }),
-  assign: (id, data) => api.post(`/leads/${id}/assign`, data)
+  assign: (id, data) => api.post(`/leads/${id}/assign`, data),
+  // Admin/HR: leads captured from Facebook/Instagram Lead Ads.
+  campaign: (params) => api.get('/leads/campaign', { params }),
+  // Admin/HR: import a Facebook Lead Ads CSV export (raw file text).
+  importFbCsv: (csv) => api.post('/leads/import-fb-csv', { csv })
 };
 
 export const callsApi = {
@@ -98,7 +102,9 @@ export const targetsApi = {
 
 export const locationsApi = {
   list: () => api.get('/locations'),
-  update: (data) => api.post('/locations/update', data)
+  update: (data) => api.post('/locations/update', data),
+  // A user's route history for a day. params: { from, to } (ISO strings).
+  history: (userId, params) => api.get(`/locations/history/${userId}`, { params })
 };
 
 export const notifsApi = {
@@ -125,6 +131,8 @@ export const reportsApi = {
 export const attendanceApi = {
   my: (month) => api.get('/attendance/my', { params: { month } }),
   list: (params) => api.get('/attendance', { params }),
+  // Every active employee with today's presence status (absentees included).
+  roster: (date) => api.get('/attendance/roster', { params: { date } }),
   punchIn: (data) => api.post('/attendance/punch-in', data),
   punchOut: (data) => api.post('/attendance/punch-out', data),
   lateStaff: (month) => api.get('/attendance/late-staff', { params: { month } })
@@ -181,6 +189,10 @@ export const regionsApi = {
 };
 
 export const presentationsApi = {
+  // Save a recording made by the current user (salesperson).
+  create: (data) => api.post('/presentations', data),
+  // The logged-in user's own recordings.
+  getMy: () => api.get('/presentations/my'),
   getBySalesperson: (id) => api.get(`/presentations/${id}`),
   addPpt: (salespersonId, data) => api.post(`/presentations/ppt/${salespersonId}`, data),
   deletePpt: (salespersonId, pptId) => api.delete(`/presentations/ppt/${salespersonId}/${pptId}`),
@@ -193,4 +205,64 @@ export const membershipApi = {
 
 export const tapifyWelcomeApi = {
   send: (data) => api.post('/tapify-welcome/send', data)
+};
+
+// WhatsApp Business API — send / bulk / templates / conversations (mirrors app).
+export const whatsappApi = {
+  send: (data) => api.post('/whatsapp/send', data).then(r => r.data),
+  sendBulk: (data) => api.post('/whatsapp/bulk', data).then(r => r.data),
+  templates: () => api.get('/whatsapp/templates').then(r => r.data),
+  conversations: () => api.get('/whatsapp/conversations').then(r => r.data),
+  thread: (phone) => api.get('/whatsapp/thread/' + encodeURIComponent(phone)).then(r => r.data)
+};
+
+// Payroll — salary structures + payslips.
+export const payrollApi = {
+  // HR: list employees + whether their salary structure is set.
+  employees: () => api.get('/payroll/employees'),
+  // Salary structure (fill once). GET works for HR or the owning employee.
+  getStructure: (userId) => api.get(`/payroll/structure/${userId}`),
+  saveStructure: (userId, data) => api.put(`/payroll/structure/${userId}`, data),
+  // Payslips. list() → HR all (optional userId); employee → own.
+  listPayslips: (userId) => api.get('/payroll/payslips', { params: userId ? { userId } : {} }),
+  // Admin/HR: total salary spend grouped by month. Optional { year } or { month }.
+  salarySpend: (params) => api.get('/payroll/salary-spend', { params }),
+  getPayslip: (id) => api.get(`/payroll/payslips/${id}`),
+  createPayslip: (data) => api.post('/payroll/payslips', data),
+  payslipPdf: (id) => api.get(`/payroll/payslips/${id}/pdf`), // { filename, base64 }
+  deletePayslip: (id) => api.delete(`/payroll/payslips/${id}`)
+};
+
+// Leave requests.
+export const leavesApi = {
+  // Apply for leave. data: { leaveType, fromDate, toDate, reason }
+  apply: (data) => api.post('/leaves', data),
+  // Own leave history (any role).
+  my: () => api.get('/leaves/my'),
+  // Withdraw a still-pending request of your own.
+  cancel: (id) => api.post(`/leaves/${id}/cancel`),
+  // Admin/HR: every request in the company. params: { status? }
+  list: (params) => api.get('/leaves', { params }),
+  approve: (id) => api.post(`/leaves/${id}/approve`),
+  reject: (id, note) => api.post(`/leaves/${id}/reject`, { note })
+};
+
+// HR dashboard aggregates.
+export const hrDashboardApi = {
+  stats: (month) => api.get('/hr-dashboard/stats', { params: { month } })
+};
+
+// New Clients — digital-card onboarding + help/support requests captured over WhatsApp.
+export const newClientsApi = {
+  list: (params) => api.get('/new-clients', { params }),
+  update: (id, data) => api.patch(`/new-clients/${id}`, data),
+  remove: (id) => api.delete(`/new-clients/${id}`)
+};
+
+// Sales presentation decks — admin/HR upload a PDF and assign it to sales staff.
+export const salesDecksApi = {
+  list: () => api.get('/sales-decks'),
+  create: (data) => api.post('/sales-decks', data),
+  update: (id, data) => api.put(`/sales-decks/${id}`, data),
+  remove: (id) => api.delete(`/sales-decks/${id}`)
 };

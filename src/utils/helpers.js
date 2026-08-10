@@ -58,3 +58,24 @@ export const fmtTarget = (val, role, currency = '₹') => {
   const m = getTargetMeta(role);
   return m.unit === 'revenue' ? fmt(val, currency) : (val || 0) + ' ' + m.unit;
 };
+
+/** Open a { filename, base64 } PDF payload in a new tab. */
+export const openPdf = (res, fallbackName = 'document.pdf') => {
+  const filename = res?.filename || fallbackName;
+  const base64 = res?.base64 || (res?.data && (res.data.base64 || res.data.pdf));
+  if (!base64) return;
+  const bytes = atob(base64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  const blob = new Blob([arr], { type: 'application/pdf' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.target = '_blank';
+  a.rel = 'noreferrer';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+};

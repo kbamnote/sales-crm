@@ -48,6 +48,27 @@ import ProfilePage from './pages/profile/ProfilePage';
 import SendMembershipPage from './pages/sendMembership/SendMembershipPage';
 import SendTapifyWelcomePage from './pages/sendTapifyWelcome/SendTapifyWelcomePage';
 
+// HR & Payroll
+import HRDashboardPage from './pages/hr/HRDashboardPage';
+import PayrollPage from './pages/hr/PayrollPage';
+import MyPayslipsPage from './pages/hr/MyPayslipsPage';
+import LeavePage from './pages/hr/LeavePage';
+import LateStaffPage from './pages/hr/LateStaffPage';
+import SupportRequestsPage from './pages/hr/SupportRequestsPage';
+
+// Presentations
+import SalesPresentationPage from './pages/presentations/SalesPresentationPage';
+
+// WhatsApp
+import WhatsAppPage from './pages/whatsapp/WhatsAppPage';
+import WhatsAppThreadPage from './pages/whatsapp/WhatsAppThreadPage';
+
+// Route & monitoring
+import RouteHistoryPage from './pages/dashboard/RouteHistoryPage';
+import TeamMapPage from './pages/dashboard/TeamMapPage';
+import TeamMonitorPage from './pages/dashboard/TeamMonitorPage';
+import CampaignLeadsPage from './pages/leads/CampaignLeadsPage';
+
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -95,8 +116,25 @@ export default function App() {
         <Route path="chat" element={<ChatPage />} />
         <Route path="profile" element={<ProfilePage />} />
         <Route path="presentations" element={<PresentationsPage />} />
+        <Route path="sales-presentation" element={<SalesPresentationPage />} />
+        <Route path="whatsapp" element={<WhatsAppPage />} />
+        <Route path="whatsapp/thread/:phone" element={<WhatsAppThreadPage />} />
         <Route path="send-membership" element={<SendMembershipPage />} />
         <Route path="send-tapify-welcome" element={<SendTapifyWelcomePage />} />
+
+        {/* HR & Payroll */}
+        <Route path="hr-dashboard" element={<HRDashboardPage />} />
+        <Route path="payroll" element={<PayrollPage />} />
+        <Route path="my-payslips" element={<MyPayslipsPage />} />
+        <Route path="leave" element={<LeavePage />} />
+        <Route path="late-staff" element={<LateStaffPage />} />
+        <Route path="support" element={<SupportRequestsPage />} />
+
+        {/* Route & monitoring */}
+        <Route path="route-history" element={<RouteHistoryPage />} />
+        <Route path="team-map" element={<TeamMapPage />} />
+        <Route path="team-monitor" element={<TeamMonitorPage />} />
+        <Route path="campaign-leads" element={<CampaignLeadsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
