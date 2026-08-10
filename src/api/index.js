@@ -167,7 +167,10 @@ export const chatApi = {
   markRead: (chatId) => api.post(`/chat/${chatId}/read`),
   clear: (chatId) => api.delete(`/chat/${chatId}`),
   groups: () => api.get('/chat/groups'),
-  createGroup: (data) => api.post('/chat/groups', data)
+  createGroup: (data) => api.post('/chat/groups', data),
+  // Toggle the caller's reaction on a message. { emoji } — sending the emoji you
+  // already reacted with removes it; empty string clears it outright.
+  react: (messageId, emoji) => api.post(`/chat/messages/${messageId}/react`, { emoji })
 };
 
 export const appointmentsApi = {

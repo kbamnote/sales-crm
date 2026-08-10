@@ -7,6 +7,9 @@ import { useApp } from '../../context/AppContext';
 const isGroupId = (id) => !String(id).includes('_');
 const makeChatId = (a, b) => [String(a), String(b)].sort().join('_');
 
+// Quick-reaction emojis offered on each bubble (same set the app uses).
+const QUICK_REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
+
 const fmtTime = (t) => (t ? new Date(t).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
 const fmtConvTime = (t) => {
   if (!t) return '';
@@ -33,7 +36,29 @@ export default function ChatPage() {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [sending, setSending] = useState(false);
+  // id of the message whose quick-reaction picker is currently open.
+  const [reactOpen, setReactOpen] = useState(null);
   const messagesEndRef = useRef(null);
+
+  // Toggle the caller's reaction on a message (WhatsApp behaviour: tapping the
+  // emoji you already used removes it). Optimistic + server-confirmed.
+  const quickReact = async (msg, emoji) => {
+    const msgId = String(msg._id);
+    const mine = (msg.reactions || []).find(r => String(r.userId) === myId);
+    const next = mine && mine.emoji === emoji
+      ? (msg.reactions || []).filter(r => String(r.userId) !== myId)
+      : [...(msg.reactions || []).filter(r => String(r.userId) !== myId), { userId: myId, userName: me?.name, emoji }];
+    setMessages(prev => prev.map(m => (String(m._id) === msgId ? { ...m, reactions: next } : m)));
+    setReactOpen(null);
+    try {
+      const r = await chatApi.react(msgId, emoji);
+      if (r.data?.reactions) {
+        setMessages(prev => prev.map(m => (String(m._id) === msgId ? { ...m, reactions: r.data.reactions } : m)));
+      }
+    } catch {
+      toast('Could not add the reaction');
+    }
+  };
 
   // userId -> user map, for resolving the other party's name/avatar in 1:1 chats.
   const usersMap = useMemo(() => {
@@ -240,28 +265,106 @@ export default function ChatPage() {
               ) : (
                 messages.map(m => {
                   const isMe = String(m.fromId || m.sender?._id || '') === myId;
+                  const type = m.type || 'text';
+                  // Collapse reactions to "emoji ×N" pills, like WhatsApp.
+                  const counts = (m.reactions || []).reduce((acc, r) => {
+                    if (!r || !r.emoji) return acc;
+                    acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+                    return acc;
+                  }, {});
+                  const reactionPills = Object.entries(counts);
+                  const pickerOpen = reactOpen === String(m._id);
                   return (
-                    <div key={m._id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start' }}>
+                    <div key={m._id} style={{ display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start', maxWidth: '100%' }}>
                       {!isMe && activeChat.isGroup && (
                         <div style={{ fontSize: 11, fontWeight: 'bold', marginBottom: 4, color: 'var(--p)', marginLeft: 4 }}>{m.fromName || 'Unknown'}</div>
                       )}
-                      <div style={{
-                        maxWidth: '70%',
-                        padding: '10px 14px',
-                        borderRadius: 16,
-                        borderBottomRightRadius: isMe ? 4 : 16,
-                        borderBottomLeftRadius: !isMe ? 4 : 16,
-                        background: isMe ? 'var(--p)' : 'var(--bgt)',
-                        color: isMe ? '#fff' : 'inherit',
-                        fontSize: 14,
-                        opacity: m.pending ? 0.7 : 1,
-                        display: 'flex', alignItems: 'center', gap: 6,
-                      }}>
-                        {m.content}
-                        <span style={{ fontSize: 10, opacity: 0.8, whiteSpace: 'nowrap' }}>
-                          {m.failed ? '⚠️' : m.pending ? '🕐' : '✓✓'}
-                        </span>
+
+                      {/* Message row: bubble + reaction trigger */}
+                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, maxWidth: '100%' }}>
+                        <div style={{
+                          maxWidth: type === 'image' ? 260 : '70%',
+                          padding: type === 'image' ? 6 : '10px 14px',
+                          borderRadius: 16,
+                          borderBottomRightRadius: isMe ? 4 : 16,
+                          borderBottomLeftRadius: !isMe ? 4 : 16,
+                          background: type === 'image' ? 'transparent' : (isMe ? 'var(--p)' : 'var(--bgt)'),
+                          color: isMe ? '#fff' : 'inherit',
+                          fontSize: 14,
+                          opacity: m.pending ? 0.7 : 1,
+                          overflow: 'hidden',
+                        }}>
+                          {type === 'image' ? (
+                            <a href={m.content} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()}>
+                              <img
+                                src={m.content}
+                                alt="Shared"
+                                style={{ maxWidth: 250, maxHeight: 250, borderRadius: 12, display: 'block', cursor: 'zoom-in' }}
+                                onError={e => { e.currentTarget.style.display = 'none'; }}
+                              />
+                            </a>
+                          ) : type === 'voice' ? (
+                            <audio controls preload="none" src={m.content} style={{ maxWidth: 240, height: 34 }} />
+                          ) : (
+                            m.content
+                          )}
+                          {type === 'text' && (
+                            <span style={{ fontSize: 10, opacity: 0.8, marginLeft: 6, whiteSpace: 'nowrap' }}>
+                              {m.failed ? '⚠️' : m.pending ? '🕐' : '✓✓'}
+                            </span>
+                          )}
+                        </div>
+                        {/* Reaction trigger — subtle, hover-revealed */}
+                        <button
+                          onClick={() => setReactOpen(pickerOpen ? null : String(m._id))}
+                          title="React"
+                          style={{
+                            border: 'none', background: 'transparent', cursor: 'pointer',
+                            fontSize: 14, lineHeight: 1, padding: 2, opacity: 0.4,
+                          }}
+                          onMouseEnter={e => { e.currentTarget.style.opacity = 1; }}
+                          onMouseLeave={e => { e.currentTarget.style.opacity = 0.4; }}
+                        >
+                          😊
+                        </button>
                       </div>
+
+                      {/* Quick-reaction picker */}
+                      {pickerOpen && (
+                        <div style={{ display: 'flex', gap: 2, marginTop: 4, background: '#fff', border: '1px solid var(--border)', borderRadius: 999, padding: '3px 6px', boxShadow: '0 2px 8px rgba(0,0,0,.15)' }}>
+                          {QUICK_REACTIONS.map(e => (
+                            <button
+                              key={e}
+                              onClick={() => quickReact(m, e)}
+                              style={{ border: 'none', background: 'transparent', cursor: 'pointer', fontSize: 20, padding: '2px 4px', lineHeight: 1 }}
+                            >
+                              {e}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Reaction pills */}
+                      {reactionPills.length > 0 && (
+                        <div style={{ display: 'flex', gap: 4, marginTop: 4, marginBottom: -2 }}>
+                          {reactionPills.map(([emoji, count]) => (
+                            <button
+                              key={emoji}
+                              onClick={() => quickReact(m, emoji)}
+                              title="Tap to toggle your reaction"
+                              style={{
+                                display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer',
+                                background: '#fff', border: '1px solid var(--border)', borderRadius: 999,
+                                padding: '2px 8px', fontSize: 13, boxShadow: '0 1px 3px rgba(0,0,0,.08)',
+                              }}
+                            >
+                              <span>{emoji}</span>
+                              {count > 1 && <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--mu)' }}>{count}</span>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
                       <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 4 }}>
                         {fmtTime(m.createdAt || m.ts)}
                       </div>
