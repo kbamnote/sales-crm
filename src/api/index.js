@@ -137,7 +137,14 @@ export const attendanceApi = {
   roster: (date) => api.get('/attendance/roster', { params: { date } }),
   punchIn: (data) => api.post('/attendance/punch-in', data),
   punchOut: (data) => api.post('/attendance/punch-out', data),
-  lateStaff: (month) => api.get('/attendance/late-staff', { params: { month } })
+  lateStaff: (month) => api.get('/attendance/late-staff', { params: { month } }),
+  // Submitted daily reports for a date. Admin/HR get everyone's; other roles
+  // get only their own (scoped server-side).
+  reports: (date) => api.get('/attendance/reports', { params: date ? { date } : {} }),
+  // Excel export -> { filename, base64 }. period: daily|weekly|monthly.
+  // userId: omit for self, an id for one employee, or 'all' for the team
+  // (the latter two are admin/HR only).
+  exportReport: (params) => api.get('/attendance/export', { params })
 };
 
 export const fieldVisitsApi = {

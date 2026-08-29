@@ -33,6 +33,7 @@ import TargetsPage from './pages/targets/TargetsPage';
 import TeamPage from './pages/team/TeamPage';
 import PermissionsPage from './pages/permissions/PermissionsPage';
 import ReportsPage from './pages/reports/ReportsPage';
+import DailyReportsPage from './pages/reports/DailyReportsPage';
 
 // Phase 3
 import AttendancePage from './pages/attendance/AttendancePage';
@@ -108,6 +109,7 @@ export default function App() {
         <Route path="team" element={<TeamPage />} />
         <Route path="appointments" element={<AppointmentsPage />} />
         <Route path="reports" element={<ReportsPage />} />
+        <Route path="daily-reports" element={<DailyReportsPage />} />
         <Route path="notifications" element={<NotificationsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="permissions" element={<PermissionsPage />} />

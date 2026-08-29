@@ -63,6 +63,10 @@ export const NAV_ITEMS = [
     roles: ['admin','manager','bdo','team_leader','sales','tms','tme','hr'] },
   { id: 'attendance', path: '/attendance', ic: '⏰', label: 'Attendance',
     roles: ['admin','manager','bdo','team_leader','sales','tms','tme','hr'] },
+  // Punch-out daily reports + Excel export. Admin/HR see everyone and can
+  // export any employee or the whole team; other roles see only their own.
+  { id: 'daily-reports', path: '/daily-reports', ic: '📄', label: 'Daily Reports',
+    roles: ['admin','hr','manager','bdo','team_leader','sales','tms','tme','telecaller','assistant_hr'] },
   { id: 'presentations', path: '/presentations', ic: '🎤', label: 'Presentations',
     roles: ['admin','manager'], sec: 'Tools' },
   { id: 'sales-presentation', path: '/sales-presentation', ic: '🎙️', label: 'Sales Presentation',
