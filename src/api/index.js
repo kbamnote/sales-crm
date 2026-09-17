@@ -278,3 +278,23 @@ export const salesDecksApi = {
   update: (id, data) => api.put(`/sales-decks/${id}`, data),
   remove: (id) => api.delete(`/sales-decks/${id}`)
 };
+
+// Customer Success — Customer Managers looking after Tapify customers.
+// Managers get only their own customers; admin gets everyone plus assignment.
+export const customerSuccessApi = {
+  today: (params) => api.get('/customer-success/today', { params }),
+  clients: (params) => api.get('/customer-success/clients', { params }),
+  client: (tapifyUserId) => api.get(`/customer-success/clients/${tapifyUserId}`),
+  timeline: (tapifyUserId, params) => api.get(`/customer-success/clients/${tapifyUserId}/timeline`, { params }),
+  inquiries: (tapifyUserId) => api.get(`/customer-success/clients/${tapifyUserId}/inquiries`),
+  addNote: (tapifyUserId, data) => api.post(`/customer-success/clients/${tapifyUserId}/notes`, data),
+  setFollowUpDone: (noteId, done) => api.patch(`/customer-success/notes/${noteId}`, { followUpDone: done }),
+  notify: (tapifyUserId, data) => api.post(`/customer-success/clients/${tapifyUserId}/notify`, data),
+  catalog: () => api.get('/customer-success/catalog'),
+  // admin
+  managers: () => api.get('/customer-success/managers'),
+  assign: (data) => api.post('/customer-success/assign', data),
+  scorecard: (days) => api.get('/customer-success/scorecard', { params: { days } }),
+  syncState: () => api.get('/customer-success/sync'),
+  syncNow: () => api.post('/customer-success/sync'),
+};

@@ -69,6 +69,10 @@ import RouteHistoryPage from './pages/dashboard/RouteHistoryPage';
 import TeamMapPage from './pages/dashboard/TeamMapPage';
 import TeamMonitorPage from './pages/dashboard/TeamMonitorPage';
 import CampaignLeadsPage from './pages/leads/CampaignLeadsPage';
+import CustomerTodayPage from './pages/customerSuccess/CustomerTodayPage';
+import TapifyClientsPage from './pages/customerSuccess/TapifyClientsPage';
+import TapifyClientProfilePage from './pages/customerSuccess/TapifyClientProfilePage';
+import CustomerSuccessAdminPage from './pages/customerSuccess/CustomerSuccessAdminPage';
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
@@ -137,6 +141,12 @@ export default function App() {
         <Route path="team-map" element={<TeamMapPage />} />
         <Route path="team-monitor" element={<TeamMonitorPage />} />
         <Route path="campaign-leads" element={<CampaignLeadsPage />} />
+
+        {/* Customer Success — Customer Managers looking after Tapify customers */}
+        <Route path="customer-success" element={<CustomerTodayPage />} />
+        <Route path="customer-success/clients" element={<TapifyClientsPage />} />
+        <Route path="customer-success/clients/:id" element={<TapifyClientProfilePage />} />
+        <Route path="customer-success/admin" element={<CustomerSuccessAdminPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

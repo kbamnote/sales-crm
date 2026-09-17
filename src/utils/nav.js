@@ -32,6 +32,14 @@ export const NAV_ITEMS = [
   { id: 'fulfillment', path: '/fulfillment', ic: '📦', label: 'Order Tracking',
     roles: ['admin','manager'] },
 
+  // Customer Success — Customer Managers look after Tapify customers.
+  { id: 'cs-today', path: '/customer-success', ic: '☎️', label: "Today's Calls",
+    roles: ['admin','customer_manager'], sec: 'Customer Success' },
+  { id: 'cs-clients', path: '/customer-success/clients', ic: '🧑‍💼', label: 'Tapify Clients',
+    roles: ['admin','customer_manager'] },
+  { id: 'cs-admin', path: '/customer-success/admin', ic: '🗂️', label: 'Managers & Assignment',
+    roles: ['admin'] },
+
   // Pipeline
   { id: 'leads', path: '/leads', ic: '💡', label: 'Leads',
     roles: ['admin','manager','bdo','team_leader','tms','tme','hr'], sec: 'Pipeline' },
@@ -58,15 +66,15 @@ export const NAV_ITEMS = [
   { id: 'reports', path: '/reports', ic: '📊', label: 'Reports',
     roles: ['admin','manager'] },
   { id: 'notifications', path: '/notifications', ic: '🔔', label: 'Notifications',
-    roles: ['admin','manager','bdo','team_leader','sales','tms','tme','hr'] },
+    roles: ['admin','manager','bdo','team_leader','sales','tms','tme','hr','customer_manager'] },
   { id: 'chat', path: '/chat', ic: '💬', label: 'Chat',
-    roles: ['admin','manager','bdo','team_leader','sales','tms','tme','hr'] },
+    roles: ['admin','manager','bdo','team_leader','sales','tms','tme','hr','customer_manager'] },
   { id: 'attendance', path: '/attendance', ic: '⏰', label: 'Attendance',
-    roles: ['admin','manager','bdo','team_leader','sales','tms','tme','hr'] },
+    roles: ['admin','manager','bdo','team_leader','sales','tms','tme','hr','customer_manager'] },
   // Punch-out daily reports + Excel export. Admin/HR see everyone and can
   // export any employee or the whole team; other roles see only their own.
   { id: 'daily-reports', path: '/daily-reports', ic: '📄', label: 'Daily Reports',
-    roles: ['admin','hr','manager','bdo','team_leader','sales','tms','tme','telecaller','assistant_hr'] },
+    roles: ['admin','hr','manager','bdo','team_leader','sales','tms','tme','telecaller','assistant_hr','customer_manager'] },
   { id: 'presentations', path: '/presentations', ic: '🎤', label: 'Presentations',
     roles: ['admin','manager'], sec: 'Tools' },
   { id: 'sales-presentation', path: '/sales-presentation', ic: '🎙️', label: 'Sales Presentation',
@@ -84,9 +92,9 @@ export const NAV_ITEMS = [
   { id: 'payroll', path: '/payroll', ic: '💰', label: 'Payroll',
     roles: ['admin','hr'] },
   { id: 'my-payslips', path: '/my-payslips', ic: '🧾', label: 'My Payslips',
-    roles: ['admin','manager','bdo','team_leader','sales','tms','tme','hr'] },
+    roles: ['admin','manager','bdo','team_leader','sales','tms','tme','hr','customer_manager'] },
   { id: 'leave', path: '/leave', ic: '✈️', label: 'Leave',
-    roles: ['admin','manager','bdo','team_leader','sales','tms','tme','hr'] },
+    roles: ['admin','manager','bdo','team_leader','sales','tms','tme','hr','customer_manager'] },
   { id: 'late-staff', path: '/late-staff', ic: '⏰', label: 'Late Staff',
     roles: ['admin','manager','bdo','team_leader','hr'] },
   { id: 'support', path: '/support', ic: '🛟', label: 'Support Requests',

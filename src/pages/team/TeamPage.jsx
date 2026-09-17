@@ -111,6 +111,7 @@ export default function TeamPage() {
           <option value="tme">TME</option>
           <option value="telecaller">Telecaller</option>
           <option value="assistant_hr">Assistant HR</option>
+          <option value="customer_manager">Customer Manager</option>
           <option value="hr">HR</option>
           <option value="designer">Designer</option>
           <option value="social_media">Social Media Manager</option>
@@ -281,7 +282,7 @@ function UserForm({ user, onSave, onCancel, allUsers = [] }) {
             ['admin', 'Admin'], ['manager', 'Manager'], ['bdo', 'BDO'],
             ['team_leader', 'Team Leader'], ['sales', 'Sales'],
             ['tms', 'TMS'], ['tme', 'TME'], ['telecaller', 'Telecaller'],
-            ['assistant_hr', 'Assistant HR'], ['designer', 'Designer'],
+            ['assistant_hr', 'Assistant HR'], ['customer_manager', 'Customer Manager'], ['designer', 'Designer'],
             ['social_media', 'Social Media Manager'], ['hr', 'HR']
           ]} />
         <div className="fg">

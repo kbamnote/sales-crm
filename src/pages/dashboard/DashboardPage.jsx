@@ -11,6 +11,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
 import { reportsApi, meetingsApi, targetsApi, dealsApi, leadsApi, callsApi } from '../../api';
 import { fmt, pct, fmtTarget, curMonth } from '../../utils/helpers';
+import CustomerTodayPage from '../customerSuccess/CustomerTodayPage';
 
 export default function DashboardPage() {
   const { user } = useAuth();
@@ -28,6 +29,9 @@ export default function DashboardPage() {
       return <TeamLeadDash />;
     case 'hr':
       return <HRDash />;
+    // A Customer Manager's home is their call list.
+    case 'customer_manager':
+      return <CustomerTodayPage />;
     default:
       return <SimpleDash />;
   }

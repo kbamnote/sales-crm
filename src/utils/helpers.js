@@ -35,7 +35,7 @@ export const stars = (r) =>
 export const roleColor = {
   admin: '#EF4444', manager: '#8B5CF6', bdo: '#3B82F6',
   team_leader: '#F59E0B', sales: '#10B981',
-  tms: '#06B6D4', tme: '#06B6D4', hr: '#EC4899'
+  tms: '#06B6D4', tme: '#06B6D4', hr: '#EC4899', customer_manager: '#0891B2'
 };
 
 export const roleLabel = {
@@ -43,7 +43,7 @@ export const roleLabel = {
   team_leader: 'Team Leader', sales: 'Sales Executive',
   tms: 'TMS Agent', tme: 'TME', hr: 'Senior HR',
   telecaller: 'Telecaller', designer: 'Designer', social_media: 'Social Media Manager',
-  assistant_hr: 'Assistant HR'
+  assistant_hr: 'Assistant HR', customer_manager: 'Customer Manager'
 };
 
 export const getTargetMeta = (role) => {
