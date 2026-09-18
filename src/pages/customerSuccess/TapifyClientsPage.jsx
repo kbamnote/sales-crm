@@ -7,7 +7,32 @@ import { Link } from 'react-router-dom';
 import { customerSuccessApi } from '../../api';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
-import { HEALTH, HealthBadge, ago, dateOnly, errorText } from './shared';
+import { HEALTH, HealthBadge, ago, dateOnly, errorText, num } from './shared';
+
+/**
+ * One line of "is Tapify actually working for them": how many people opened
+ * their card or website this month, and what it produced. Zero here on an
+ * otherwise busy account is the strongest reason to call.
+ */
+function Audience({ e }) {
+  const visits = (e?.views30d || 0) + (e?.scans30d || 0);
+  if (!visits) {
+    return <span style={{ color: 'var(--mu)' }}>{e?.views ? 'None this month' : '—'}</span>;
+  }
+  const parts = [];
+  if (e.cardViews30d) parts.push(`${num(e.cardViews30d)} card`);
+  if (e.siteViews30d) parts.push(`${num(e.siteViews30d)} website`);
+  if (e.scans30d) parts.push(`${num(e.scans30d)} scans`);
+  return (
+    <>
+      <b>{num(visits)}</b>
+      <div style={{ fontSize: 10, color: 'var(--mu)' }}>
+        {parts.join(' · ')}
+        {e.leads30d ? ` · ${num(e.leads30d)} enquiries` : ''}
+      </div>
+    </>
+  );
+}
 
 const TABS = [['', 'All'], ['active', HEALTH.active.label], ['slipping', HEALTH.slipping.label], ['quiet', HEALTH.quiet.label], ['never_started', HEALTH.never_started.label]];
 
@@ -121,6 +146,8 @@ export default function TapifyClientsPage() {
             <option value="inactive">Least active</option>
             <option value="signup">Newest signups</option>
             <option value="inquiries">Most unread inquiries</option>
+            <option value="audience">Busiest this month</option>
+            <option value="noaudience">No visitors at all</option>
             <option value="name">Name</option>
           </select>
         </div>
@@ -131,16 +158,17 @@ export default function TapifyClientsPage() {
           <thead>
             <tr>
               <th>Customer</th><th>Status</th><th>Last seen</th><th>App</th>
-              <th>Features used</th><th>Inquiries</th><th>Signed up</th>
+              <th>Features used</th><th title="Card opens, website visits and scans in the last 30 days">Their visitors (30d)</th>
+              <th>Inquiries</th><th>Signed up</th>
               {isAdmin && <th>Manager</th>}
               <th>Suggestion</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 16 }}>Loading…</td></tr>
+              <tr><td colSpan={10} style={{ textAlign: 'center', padding: 16 }}>Loading…</td></tr>
             ) : !data?.clients?.length ? (
-              <tr><td colSpan={9} style={{ textAlign: 'center', padding: 20, color: 'var(--mu)' }}>No clients match.</td></tr>
+              <tr><td colSpan={10} style={{ textAlign: 'center', padding: 20, color: 'var(--mu)' }}>No clients match.</td></tr>
             ) : data.clients.map((c) => (
               <tr key={c.tapifyUserId}>
                 <td>
@@ -157,6 +185,7 @@ export default function TapifyClientsPage() {
                     : <span className="badge bbgr">No</span>}
                 </td>
                 <td style={{ fontSize: 12 }}>{c.featuresUsed}</td>
+                <td style={{ fontSize: 12 }}><Audience e={c.engagement} /></td>
                 <td style={{ fontSize: 12 }}>
                   {c.inquiries?.total || 0}
                   {c.inquiries?.unread > 0 && <span className="badge bba" style={{ marginLeft: 4 }}>{c.inquiries.unread} unread</span>}

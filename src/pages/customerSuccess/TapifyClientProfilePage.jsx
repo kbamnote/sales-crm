@@ -9,6 +9,7 @@ import { customerSuccessApi } from '../../api';
 import { useApp } from '../../context/AppContext';
 import {
   HealthBadge, ago, dateTime, dateOnly, whatsappUrl, telUrl, errorText, ContactForm, NudgeForm,
+  SOURCES, eventLabel, assetLabel, num,
 } from './shared';
 
 const NOTE_ICON = { note: '📝', call: '📞', whatsapp: '💬', notification: '🔔', follow_up: '⏰', assignment: '👤' };
@@ -167,7 +168,12 @@ export default function TapifyClientProfilePage() {
       {live && (
         <div className="g3" style={{ marginBottom: 12 }}>
           <Presence title="Digital cards" empty="No digital card"
-            items={(live.vcards || []).map((v) => ({ key: v.id, name: v.name, url: v.url, meta: `${v.views} views${v.active ? '' : ' · inactive'}` }))} />
+            items={(live.vcards || []).map((v) => ({
+              key: v.id, name: v.name, url: v.url,
+              meta: `${v.views} views${v.active ? '' : ' · inactive'}`,
+              // What to write to their NFC card, so taps are counted as taps.
+              copy: v.nfcUrl ? { label: 'Copy NFC link', value: v.nfcUrl } : null,
+            }))} />
           <Presence title="Websites" empty="No website yet"
             items={(live.sites || []).map((s) => ({ key: s.id, name: s.name, url: s.published ? s.url : null, meta: s.published ? `Published · ${s.views30d ?? '—'} views (30d)` : 'Not published' }))} />
           <Presence title="WhatsApp stores" empty="No store"
@@ -177,6 +183,9 @@ export default function TapifyClientProfilePage() {
               : 'No plan on record'} />
         </div>
       )}
+
+      {/* ── audience ── */}
+      <Audience client={client} live={live} />
 
       {/* ── features ── */}
       <div className="card" style={{ marginBottom: 12 }}>
@@ -223,6 +232,190 @@ export default function TapifyClientProfilePage() {
   );
 }
 
+/**
+ * What the customer's own audience did: how many people opened their card or
+ * website, how they got there (NFC tap, QR scan, a shared link), what they
+ * tapped afterwards, and what came of it.
+ *
+ * Headline numbers come from the synced snapshot so they show even when Tapify
+ * is unreachable; the breakdowns and the day-by-day chart come from the live
+ * fetch (live.engagement).
+ */
+function Audience({ client, live }) {
+  const e = client.engagement || {};
+  const detail = live?.engagement || client.engagementDetail || null;
+  const nothing = !(e.views || e.scans || e.taps || e.leads);
+
+  const cards = [
+    ['Card opened', e.cardViews30d, 'times this month', 'var(--A)'],
+    ['Website visited', e.siteViews30d, 'times this month', 'var(--C)'],
+    ['Scanned (QR / review card)', e.scans30d, 'times this month', 'var(--P)'],
+    ['Called / WhatsApped', e.taps30d, 'taps this month', 'var(--G)'],
+  ];
+
+  const bySource = Object.entries(detail?.bySource || {})
+    .map(([key, v]) => ({ key, total: v.total || 0, d30: v.d30 || 0 }))
+    .filter((s) => s.total > 0)
+    .sort((a, b) => b.total - a.total);
+
+  const byAsset = Object.entries(detail?.byAsset || {})
+    .map(([key, v]) => ({ key, total: v.total || {}, d30: v.d30 || {} }))
+    .filter((a) => Object.values(a.total).some((n) => n > 0));
+
+  const taps = Object.entries(detail?.byEvent || {})
+    .filter(([k]) => k.startsWith('tap_'))
+    .map(([key, v]) => ({ key, ...v }))
+    .sort((a, b) => b.total - a.total);
+
+  return (
+    <div className="card" style={{ marginBottom: 12 }}>
+      <div className="section-hdr">
+        <h3>Their customers</h3>
+        <span style={{ fontSize: 11, color: 'var(--mu)' }}>
+          {e.lastAt ? `Last visitor ${ago(e.lastAt)}` : 'No visitors recorded yet'}
+        </span>
+      </div>
+
+      {nothing ? (
+        <div style={{ fontSize: 12, color: 'var(--mu)' }}>
+          Nobody has opened this customer's card, website or QR codes yet — or they were set up
+          before tracking started. Worth asking how they are sharing it.
+        </div>
+      ) : (
+        <>
+          <div className="g4" style={{ marginBottom: 12 }}>
+            {cards.map(([label, value, sub, color]) => (
+              <div key={label} className="stat" style={{ '--cl': color, cursor: 'default' }}>
+                <div className="sl">{label}</div>
+                <div className="sv">{num(value)}</div>
+                <div className="ss">{sub}</div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ fontSize: 12, marginBottom: 12, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+            <span><b>{num(e.people30d)}</b> different people this month</span>
+            <span><b>{num(e.views)}</b> opens all time</span>
+            <span><b>{num(e.leads30d)}</b> enquiries/bookings/orders this month</span>
+            {e.nfcTaps > 0 && <span><b>{num(e.nfcTaps)}</b> NFC card taps all time</span>}
+            {e.reviewScans > 0 && <span><b>{num(e.reviewScans)}</b> review-card scans all time</span>}
+          </div>
+
+          <div className="g3">
+            <Breakdown title="How they arrived" empty="Not recorded yet"
+              rows={bySource.map((s) => ({
+                key: s.key,
+                label: `${SOURCES[s.key]?.icon || '•'} ${SOURCES[s.key]?.label || s.key}`,
+                value: num(s.total),
+                meta: `${num(s.d30)} this month`,
+              }))} />
+
+            <Breakdown title="Where" empty="Nothing yet"
+              rows={byAsset.map((a) => ({
+                key: a.key,
+                label: assetLabel(a.key),
+                value: num((a.total.views || 0) + (a.total.scans || 0)),
+                meta: `${num((a.d30.views || 0) + (a.d30.scans || 0))} this month`
+                  + ((a.total.leads || 0) ? ` · ${num(a.total.leads)} enquiries` : '')
+                  + ((a.total.reviews || 0) ? ` · ${num(a.total.reviews)} reviews` : ''),
+              }))} />
+
+            <Breakdown title="What they tapped" empty="No taps recorded yet"
+              rows={taps.map((t) => ({
+                key: t.key,
+                label: eventLabel(t.key),
+                value: num(t.total),
+                meta: `${num(t.d30)} this month`,
+              }))} />
+          </div>
+
+          {!!(detail?.daily || []).length && <DailyChart days={detail.daily} />}
+          {!!(detail?.recent || []).length && <RecentVisits rows={detail.recent} />}
+        </>
+      )}
+    </div>
+  );
+}
+
+function Breakdown({ title, rows, empty }) {
+  return (
+    <div className="card2">
+      <div className="sl" style={{ marginBottom: 8 }}>{title}</div>
+      {!rows.length ? <div style={{ fontSize: 12, color: 'var(--mu)' }}>{empty}</div> : rows.map((r) => (
+        <div key={r.key} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, marginBottom: 6 }}>
+          <div style={{ fontSize: 12 }}>
+            {r.label}
+            <div style={{ fontSize: 10, color: 'var(--mu)' }}>{r.meta}</div>
+          </div>
+          <b style={{ fontSize: 13 }}>{r.value}</b>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Last 30 days as bars — enough to see "it stopped" or "it took off". */
+function DailyChart({ days }) {
+  const recent = days.slice(-30);
+  const peak = Math.max(1, ...recent.map((d) => (d.views || 0) + (d.scans || 0)));
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div className="sl" style={{ marginBottom: 6 }}>Visitors, last 30 days</div>
+      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 64 }}>
+        {recent.map((d) => {
+          const total = (d.views || 0) + (d.scans || 0);
+          return (
+            <div key={d.day} title={`${dateOnly(d.day)} — ${total} visits, ${d.leads || 0} enquiries`}
+              style={{
+                flex: 1, minWidth: 3, borderRadius: '3px 3px 0 0',
+                height: `${Math.max(2, (total / peak) * 100)}%`,
+                background: d.leads ? 'var(--G)' : 'var(--A)', opacity: total ? 1 : 0.25,
+              }} />
+          );
+        })}
+      </div>
+      <div style={{ fontSize: 10, color: 'var(--mu)', marginTop: 4 }}>
+        Green = a day that brought an enquiry, booking or order.
+      </div>
+    </div>
+  );
+}
+
+/** The last few visits, in order — what a manager can read out on a call. */
+function RecentVisits({ rows }) {
+  const [open, setOpen] = useState(false);
+  const shown = open ? rows : rows.slice(0, 6);
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div className="sl" style={{ marginBottom: 6 }}>Recent visits</div>
+      <div className="tw">
+        <table>
+          <thead><tr><th>When</th><th>What happened</th><th>Where</th><th>How they arrived</th><th>Device</th></tr></thead>
+          <tbody>
+            {shown.map((r, i) => (
+              <tr key={`${r.at}-${i}`}>
+                <td style={{ fontSize: 12, whiteSpace: 'nowrap' }} title={dateTime(r.at)}>{ago(r.at)}</td>
+                <td style={{ fontSize: 12 }}>
+                  {eventLabel(r.event)}{r.label ? ` · ${r.label}` : ''}
+                  {r.repeat && <span className="badge bbgr" style={{ marginLeft: 6 }}>been before</span>}
+                </td>
+                <td style={{ fontSize: 12 }}>{assetLabel(r.assetType)}</td>
+                <td style={{ fontSize: 12 }}>{SOURCES[r.source]?.short || r.source}</td>
+                <td style={{ fontSize: 12 }}>{[r.os, r.device].filter(Boolean).join(' · ') || '—'}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {rows.length > 6 && (
+        <button className="btn btn-sm" style={{ marginTop: 8 }} onClick={() => setOpen(!open)}>
+          {open ? 'Show less' : `Show all ${rows.length}`}
+        </button>
+      )}
+    </div>
+  );
+}
+
 function Presence({ title, items, empty, footer }) {
   return (
     <div className="card">
@@ -233,6 +426,15 @@ function Presence({ title, items, empty, footer }) {
             ? <a href={i.url} target="_blank" rel="noreferrer" style={{ fontSize: 13, fontWeight: 600 }}>{i.name} ↗</a>
             : <span style={{ fontSize: 13, fontWeight: 600 }}>{i.name}</span>}
           <div style={{ fontSize: 11, color: 'var(--mu)' }}>{i.meta}</div>
+          {i.copy && (
+            <button
+              className="btn btn-sm" style={{ marginTop: 4, fontSize: 10, padding: '2px 8px' }}
+              onClick={() => navigator.clipboard?.writeText(i.copy.value)}
+              title={i.copy.value}
+            >
+              {i.copy.label}
+            </button>
+          )}
         </div>
       ))}
       {footer && <div style={{ fontSize: 11, color: 'var(--mu)', borderTop: '1px solid var(--border)', marginTop: 8, paddingTop: 6 }}>{footer}</div>}

@@ -47,6 +47,54 @@ export const telUrl = (phone) => `tel:${String(phone || '').replace(/[^\d+]/g, '
 
 export const errorText = (e, fallback) => e?.response?.data?.error || e?.response?.data?.message || fallback;
 
+// ───────────────────── audience (what their customers did) ─────────────────
+
+/** How a visitor arrived, in words a manager can repeat on a call. */
+export const SOURCES = {
+  nfc: { label: 'NFC card tapped', short: 'NFC tap', icon: '📇' },
+  qr: { label: 'QR code scanned', short: 'QR scan', icon: '🔳' },
+  whatsapp: { label: 'Link opened from WhatsApp', short: 'WhatsApp', icon: '💬' },
+  social: { label: 'Link opened from social media', short: 'Social', icon: '📱' },
+  search: { label: 'Found on Google', short: 'Google', icon: '🔍' },
+  link: { label: 'Link from another website', short: 'Other site', icon: '🔗' },
+  direct: { label: 'Opened the link directly', short: 'Direct link', icon: '↗️' },
+};
+
+/** What each recorded event means. */
+export const EVENTS = {
+  view: 'Opened',
+  scan: 'Scanned',
+  tap_call: 'Tapped Call',
+  tap_whatsapp: 'Tapped WhatsApp',
+  tap_email: 'Tapped Email',
+  tap_save_contact: 'Saved the contact',
+  tap_directions: 'Tapped directions',
+  tap_share: 'Shared it',
+  tap_social: 'Tapped a social link',
+  tap_link: 'Tapped a link',
+  tap_qr_download: 'Downloaded the QR',
+  tap_book: 'Tapped Book',
+  tap_order: 'Tapped Order',
+  tap_pay: 'Tapped Pay',
+  inquiry: 'Sent an enquiry',
+  appointment: 'Booked an appointment',
+  order: 'Placed an order',
+  redirect_google: 'Sent on to Google to review',
+  review_submitted: 'Left a review',
+};
+export const eventLabel = (e) => EVENTS[e] || String(e || '').replace(/_/g, ' ');
+
+export const ASSETS = {
+  card: 'Digital card',
+  site: 'Website',
+  store: 'WhatsApp store',
+  qr: 'QR code',
+  review_card: 'Google review card',
+};
+export const assetLabel = (a) => ASSETS[a] || a;
+
+export const num = (n) => (Number(n) || 0).toLocaleString('en-IN');
+
 /** Local datetime-local input value → ISO string (the browser's own time zone). */
 export const localInputToIso = (v) => (v ? new Date(v).toISOString() : null);
 
