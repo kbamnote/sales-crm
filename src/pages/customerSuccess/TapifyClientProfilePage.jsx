@@ -16,7 +16,12 @@ const NOTE_ICON = { note: '📝', call: '📞', whatsapp: '💬', notification: 
 const SOURCE_LABEL = { card: ['Digital card', 'bbl'], website: ['Website', 'bbp'], website_form: ['Website form', 'bbc'] };
 
 const humanAction = (e) => {
-  if (e.kind === 'open') return 'Opened';
+  // A tap carries the button's own caption in detail — "Tapped Save changes"
+  // says far more than the slug the action column holds.
+  if (e.kind === 'tap') return `Tapped “${e.detail || String(e.action || '').replace(/_/g, ' ')}”`;
+  // An unmapped screen is filed under "Other screens"; its real name is the
+  // only thing that identifies it, so show that instead of a bare "Opened".
+  if (e.kind === 'open') return e.feature === 'other' && e.detail ? `Opened ${e.detail}` : 'Opened';
   if (e.action === 'app_open') return 'Opened the app';
   if (e.action === 'login') return 'Logged in';
   const a = String(e.action || '').replace(/_/g, ' ');
@@ -446,31 +451,36 @@ function FeatureTable({ catalog, usage }) {
   const features = (catalog || []).filter((f) => f.key !== 'app');
   if (!features.length) return <div style={{ fontSize: 12, color: 'var(--mu)' }}>Feature list unavailable right now.</div>;
   const rows = features.map((f) => ({ ...f, u: (usage || {})[f.key] }));
-  const used = rows.filter((x) => x.u?.useCount || x.u?.openCount).length;
+  const used = rows.filter((x) => x.u?.useCount || x.u?.tapCount || x.u?.openCount).length;
 
   return (
     <>
       <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 8 }}>
         Using <b style={{ color: 'var(--tx)' }}>{used}</b> of {rows.length} features.
-        {' '}Opened = visited the screen · Used = actually did something (saved, published, shared…).
+        {' '}Opened = visited the screen · Tapped = pressed buttons on it · Used = saved, published or shared something.
       </div>
       <div className="tw">
         <table>
           <thead>
-            <tr><th>Feature</th><th>Status</th><th>First used</th><th>Last used</th><th>Times used</th><th>Times opened</th><th>Last 30 days</th></tr>
+            <tr><th>Feature</th><th>Status</th><th>First seen</th><th>Last seen</th><th>Times used</th><th>Taps</th><th>Times opened</th><th>Last 30 days</th></tr>
           </thead>
           <tbody>
             {rows.map(({ key, label, group, u }) => {
-              const status = u?.useCount ? ['Used', 'bbg'] : u?.openCount ? ['Opened only', 'bba'] : ['Never', 'bbgr'];
+              const status = u?.useCount
+                ? ['Used', 'bbg']
+                : u?.tapCount
+                  ? ['Tapped around', 'bba']
+                  : u?.openCount ? ['Opened only', 'bba'] : ['Never', 'bbgr'];
               return (
                 <tr key={key}>
                   <td><b style={{ fontSize: 12 }}>{label}</b><div style={{ fontSize: 10, color: 'var(--mu)' }}>{group}</div></td>
                   <td><span className={`badge ${status[1]}`}>{status[0]}</span></td>
-                  <td style={{ fontSize: 12 }}>{dateTime(u?.firstUsedAt || u?.firstOpenedAt)}</td>
-                  <td style={{ fontSize: 12 }}>{dateTime(u?.lastUsedAt || u?.lastOpenedAt)}</td>
+                  <td style={{ fontSize: 12 }}>{dateTime(u?.firstUsedAt || u?.firstTappedAt || u?.firstOpenedAt)}</td>
+                  <td style={{ fontSize: 12 }}>{dateTime(u?.lastUsedAt || u?.lastTappedAt || u?.lastOpenedAt)}</td>
                   <td style={{ fontSize: 12 }}>{u?.useCount || 0}</td>
+                  <td style={{ fontSize: 12 }}>{u?.tapCount || 0}</td>
                   <td style={{ fontSize: 12 }}>{u?.openCount || 0}</td>
-                  <td style={{ fontSize: 12 }}>{u ? `${u.uses30d || 0} used · ${u.opens30d || 0} opened` : '—'}</td>
+                  <td style={{ fontSize: 12 }}>{u ? `${u.uses30d || 0} used · ${u.taps30d || 0} taps · ${u.opens30d || 0} opened` : '—'}</td>
                 </tr>
               );
             })}
