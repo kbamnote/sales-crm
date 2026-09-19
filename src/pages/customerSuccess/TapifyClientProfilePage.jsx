@@ -35,7 +35,8 @@ export default function TapifyClientProfilePage() {
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState('notes');
+  // "What they did" opens first: it is the question a manager has before a call.
+  const [tab, setTab] = useState('activity');
 
   const load = useCallback(async () => {
     try {
@@ -200,7 +201,7 @@ export default function TapifyClientProfilePage() {
 
       {/* ── tabs ── */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
-        {[['notes', `Notes & follow-ups (${notes.length})`], ['timeline', 'Activity timeline'], ['inquiries', `Inquiries (${client.inquiries?.total || 0})`]].map(([k, l]) => (
+        {[['activity', 'What they did'], ['notes', `Notes & follow-ups (${notes.length})`], ['timeline', 'Every event'], ['inquiries', `Inquiries (${client.inquiries?.total || 0})`]].map(([k, l]) => (
           <button key={k} className={`btn btn-sm ${tab === k ? 'btn-p' : ''}`} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
@@ -231,6 +232,7 @@ export default function TapifyClientProfilePage() {
           ))}
         </div>
       )}
+      {tab === 'activity' && <ActivityReport tapifyUserId={client.tapifyUserId} clientName={client.name} />}
       {tab === 'timeline' && <Timeline tapifyUserId={client.tapifyUserId} catalog={catalog} />}
       {tab === 'inquiries' && <Inquiries tapifyUserId={client.tapifyUserId} />}
     </div>
@@ -457,7 +459,8 @@ function FeatureTable({ catalog, usage }) {
     <>
       <div style={{ fontSize: 12, color: 'var(--mu)', marginBottom: 8 }}>
         Using <b style={{ color: 'var(--tx)' }}>{used}</b> of {rows.length} features.
-        {' '}Opened = visited the screen · Tapped = pressed buttons on it · Used = saved, published or shared something.
+        {' '}Working in it = they save or publish things here · Trying it = they press things but change nothing
+        {' '}· Just looked = opened the screen only.
       </div>
       <div className="tw">
         <table>
@@ -467,10 +470,10 @@ function FeatureTable({ catalog, usage }) {
           <tbody>
             {rows.map(({ key, label, group, u }) => {
               const status = u?.useCount
-                ? ['Used', 'bbg']
+                ? ['Working in it', 'bbg']
                 : u?.tapCount
-                  ? ['Tapped around', 'bba']
-                  : u?.openCount ? ['Opened only', 'bba'] : ['Never', 'bbgr'];
+                  ? ['Trying it', 'bba']
+                  : u?.openCount ? ['Just looked', 'bba'] : ['Never opened', 'bbgr'];
               return (
                 <tr key={key}>
                   <td><b style={{ fontSize: 12 }}>{label}</b><div style={{ fontSize: 10, color: 'var(--mu)' }}>{group}</div></td>
@@ -488,6 +491,101 @@ function FeatureTable({ catalog, usage }) {
         </table>
       </div>
     </>
+  );
+}
+
+/**
+ * "What they did" — the activity a manager can actually read: one block per day
+ * in plain sentences, under a summary of the chosen window. Every word comes
+ * from Tapify (ActivityNarrator), so this page and the CRM mobile app describe
+ * the same day the same way; nothing is phrased here.
+ */
+const PERIODS = [[1, 'Today'], [7, 'This week'], [30, 'This month']];
+
+function ActivityReport({ tapifyUserId, clientName }) {
+  const { toast } = useApp();
+  const [days, setDays] = useState(7);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    customerSuccessApi.activity(tapifyUserId, days)
+      .then((r) => { if (alive) setData(r.data); })
+      .catch((e) => { if (alive) toast(errorText(e, 'Could not load activity')); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [tapifyUserId, days, toast]);
+
+  // A report is usually wanted somewhere else — a WhatsApp message to the
+  // client, or a line in a review meeting — so it can be lifted as text.
+  const copyReport = () => {
+    if (!data) return;
+    const period = PERIODS.find(([d]) => d === days)?.[1] || `${days} days`;
+    const text = [
+      `${clientName} — ${period.toLowerCase()}`,
+      data.summary?.headline || '',
+      ...(data.summary?.lines || []).map((l) => `- ${l}`),
+      '',
+      ...(data.days || []).flatMap((d) => [
+        `${d.label} (${d.from}–${d.to}) — ${d.headline}`,
+        ...d.lines.map((l) => `   • ${l}`),
+      ]),
+    ].join('\n');
+    navigator.clipboard?.writeText(text).then(
+      () => toast('Report copied'),
+      () => toast('Could not copy the report')
+    );
+  };
+
+  const s = data?.summary;
+
+  return (
+    <div className="card">
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginBottom: 12, flexWrap: 'wrap' }}>
+        {PERIODS.map(([d, label]) => (
+          <button key={d} className={`btn btn-sm ${days === d ? 'btn-p' : ''}`} onClick={() => setDays(d)}>{label}</button>
+        ))}
+        <div style={{ flex: 1 }} />
+        <button className="btn btn-sm" onClick={copyReport} disabled={!data}>Copy report</button>
+      </div>
+
+      {loading && <div style={{ fontSize: 12, color: 'var(--mu)' }}>Loading…</div>}
+
+      {!loading && s && (
+        <div style={{ background: 'var(--bg2, rgba(0,0,0,.03))', borderRadius: 8, padding: '10px 12px', marginBottom: 14 }}>
+          <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{s.headline}</div>
+          {(s.lines || []).map((l, i) => (
+            <div key={i} style={{ fontSize: 12.5, color: 'var(--mu)' }}>{l}</div>
+          ))}
+        </div>
+      )}
+
+      {!loading && !(data?.days || []).length && (
+        <div style={{ fontSize: 13, color: 'var(--mu)' }}>
+          Nothing recorded in this period. If they told you they have been using the app,
+          check they are on the latest version — older versions do not report activity.
+        </div>
+      )}
+
+      {(data?.days || []).map((d) => (
+        <div key={d.date} style={{ borderLeft: '3px solid var(--P, #3b82f6)', paddingLeft: 12, marginBottom: 16 }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
+            <b style={{ fontSize: 14 }}>{d.label}</b>
+            <span style={{ fontSize: 11, color: 'var(--mu)' }}>
+              {d.from}–{d.to} · {d.platform}
+            </span>
+          </div>
+          <div style={{ fontSize: 13, margin: '2px 0 6px' }}>{d.headline}</div>
+          <ul style={{ margin: 0, paddingLeft: 18 }}>
+            {d.lines.map((l, i) => (
+              <li key={i} style={{ fontSize: 13, lineHeight: 1.6 }}>{l}</li>
+            ))}
+          </ul>
+        </div>
+      ))}
+    </div>
   );
 }
 
