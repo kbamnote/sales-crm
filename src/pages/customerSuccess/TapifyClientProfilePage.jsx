@@ -507,6 +507,10 @@ function ActivityReport({ tapifyUserId, clientName }) {
   const [days, setDays] = useState(7);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  // Everything that happened, with the time against each line, is the default:
+  // it is what a manager reads before a call. The short version is one click
+  // away for when they only want the gist.
+  const [summaryView, setSummaryView] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -528,9 +532,13 @@ function ActivityReport({ tapifyUserId, clientName }) {
       data.summary?.headline || '',
       ...(data.summary?.lines || []).map((l) => `- ${l}`),
       '',
+      // Copies whichever view is on screen, so the manager pastes what they read.
       ...(data.days || []).flatMap((d) => [
         `${d.label} (${d.from}–${d.to}) — ${d.headline}`,
-        ...d.lines.map((l) => `   • ${l}`),
+        ...(summaryView
+          ? d.lines.map((l) => `   • ${l}`)
+          : (d.entries || []).map((e) => `   ${e.at.padEnd(9)} ${e.text}`)),
+        '',
       ]),
     ].join('\n');
     navigator.clipboard?.writeText(text).then(
@@ -548,12 +556,15 @@ function ActivityReport({ tapifyUserId, clientName }) {
           <button key={d} className={`btn btn-sm ${days === d ? 'btn-p' : ''}`} onClick={() => setDays(d)}>{label}</button>
         ))}
         <div style={{ flex: 1 }} />
+        <button className={`btn btn-sm ${summaryView ? 'btn-p' : ''}`} onClick={() => setSummaryView((v) => !v)}>
+          {summaryView ? 'Show every step' : 'Summary'}
+        </button>
         <button className="btn btn-sm" onClick={copyReport} disabled={!data}>Copy report</button>
       </div>
 
       {loading && <div style={{ fontSize: 12, color: 'var(--mu)' }}>Loading…</div>}
 
-      {!loading && s && (
+      {!loading && s && summaryView && (
         <div style={{ background: 'var(--bg2, rgba(0,0,0,.03))', borderRadius: 8, padding: '10px 12px', marginBottom: 14 }}>
           <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 4 }}>{s.headline}</div>
           {(s.lines || []).map((l, i) => (
@@ -578,11 +589,23 @@ function ActivityReport({ tapifyUserId, clientName }) {
             </span>
           </div>
           <div style={{ fontSize: 13, margin: '2px 0 6px' }}>{d.headline}</div>
-          <ul style={{ margin: 0, paddingLeft: 18 }}>
-            {d.lines.map((l, i) => (
-              <li key={i} style={{ fontSize: 13, lineHeight: 1.6 }}>{l}</li>
-            ))}
-          </ul>
+
+          {summaryView ? (
+            <ul style={{ margin: 0, paddingLeft: 18 }}>
+              {d.lines.map((l, i) => (
+                <li key={i} style={{ fontSize: 13, lineHeight: 1.6 }}>{l}</li>
+              ))}
+            </ul>
+          ) : (
+            <div>
+              {(d.entries || []).map((e, i) => (
+                <div key={i} style={{ display: 'flex', gap: 10, fontSize: 13, lineHeight: 1.9 }}>
+                  <span style={{ width: 66, flexShrink: 0, color: 'var(--mu)', fontVariantNumeric: 'tabular-nums' }}>{e.at}</span>
+                  <span>{e.text}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       ))}
     </div>
